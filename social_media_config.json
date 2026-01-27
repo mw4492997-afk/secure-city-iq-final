@@ -1,0 +1,44 @@
+{
+    "email": {
+        "enabled": 1,
+        "smtp_server": "smtp.gmail.com",
+        "smtp_port": 587,
+        "email": "",
+        "password": "",
+        "recipients": []
+    },
+    "telegram": {
+        "enabled": 1,
+        "api_token": "8501857007:AAG611bSeKwjY4dPVEsufplBkSkHPSPjffs",
+        "chat_ids": [
+            "1162639679"
+        ]
+    },
+    "whatsapp": {
+        "enabled": 0,
+        "phone_numbers": [],
+        "api_key": ""
+    },
+    "discord": {
+        "enabled": 0,
+        "webhook_url": "",
+        "channel_id": "security-alerts"
+    },
+    "slack": {
+        "enabled": 0,
+        "webhook_url": "",
+        "channel": "security-alerts"
+    },
+    "facebook": {
+        "enabled": false,
+        "page_id": "YOUR_PAGE_ID",
+        "access_token": "YOUR_ACCESS_TOKEN"
+    },
+    "twitter": {
+        "enabled": false,
+        "api_key": "YOUR_API_KEY",
+        "api_secret": "YOUR_API_SECRET",
+        "access_token": "YOUR_ACCESS_TOKEN",
+        "access_token_secret": "YOUR_ACCESS_TOKEN_SECRET"
+    }
+}

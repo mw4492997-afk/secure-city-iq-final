@@ -1,0 +1,36 @@
+# Core Web Framework
+Flask>=3.1.2
+
+# Network Analysis (may need special handling on Render)
+scapy>=2.7.0
+
+# API Requests for Social Media Integration
+requests>=2.32.5
+
+# Security Libraries
+bcrypt>=4.0.0
+cryptography>=42.0.0
+
+# Data Processing
+pandas>=3.0.0
+numpy>=2.4.1
+
+# Machine Learning for AI Threat Detection
+scikit-learn>=1.8.0
+tensorflow>=2.20.0
+joblib>=1.5.3
+
+# Performance and Monitoring
+psutil>=7.2.1
+
+# Optional: For enhanced notifications
+python-telegram-bot>=22.6
+slack-sdk>=3.39.0
+discord.py>=2.3.0
+
+# Development and Testing
+pytest>=9.0.2
+
+# Additional dependencies for Render compatibility
+gunicorn>=21.2.0
+Werkzeug>=3.0.0

@@ -1,0 +1,23 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "web_dashboard/app.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "web_dashboard/app.py"
+    }
+  ],
+  "functions": {
+    "web_dashboard/app.py": {
+      "runtime": "python3.9"
+    }
+  }
+}
