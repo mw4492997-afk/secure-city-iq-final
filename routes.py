@@ -1,7 +1,7 @@
 from flask import Flask, render_template
 
 # إنشاء تطبيق Flask
-app = Flask(name)
+app = Flask(__name__)
 
 @app.route('/')
 def home():
@@ -13,5 +13,5 @@ def dashboard():
     # هذا السطر هو الذي سيقتل الشاشة البيضاء ويستدعي الأزرار الأربعة
     return render_template('dashboard.html', scanned_lines=6700, threats_detected=0)
 
-if name == 'main':
+if __name__ == '__main__':
     app.run(debug=True)
