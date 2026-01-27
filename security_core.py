@@ -244,6 +244,8 @@ class SecurityCore:
                                     if b"VPN" in payload or dport == 1194:
                                         self.log_message(f"🔒 [VPN] محاولة اتصال VPN من {src_ip}")
                                         self.record_login_attempt(src_ip, "VPN", str(dport), "detected")
+        except:
+            pass
 
     def record_login_attempt(self, ip, service, port, status, username=None):
         """تسجيل محاولة تسجيل دخول"""
