@@ -1,7 +1,7 @@
 import sys
 import types
 import os
-import telebot
+# import telebot
 from flask import Flask, render_template
 
 # Mock customtkinter to avoid GUI errors on server
@@ -33,8 +33,8 @@ sys.modules['customtkinter'] = mock_ctk
 import customtkinter as ctk
 
 # Telegram bot setup (if needed)
-TOKEN = "8275936002:AAED9W5qidlL-bvc9ATsCY1C88o"
-bot = telebot.TeleBot(TOKEN)
+# TOKEN = "8275936002:AAED9W5qidlL-bvc9ATsCY1C88o"
+# bot = telebot.TeleBot(TOKEN)
 
 # Create Flask app for web routes
 securecity_app = Flask(__name__)
