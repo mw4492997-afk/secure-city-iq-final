@@ -13,28 +13,28 @@ def home():
 
     return render_template('securecity_home.html', lines_count=lines_count)
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username == 'admin' and password == 'Admin123':
+            session['logged_in'] = True
+            return redirect(url_for('dashboard'))
+        else:
+            return render_template('login.html', error='Invalid credentials')
+    return render_template('login.html')
+
 @app.route('/dashboard')
 def dashboard():
-    return """
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('dashboard.html', scanned_lines=6700, threats=0)
 
-🛡️ لوحة تحكم SECURE CITY IQ
-
-تم الوصول إلى النظام الرئيسي بنجاح
-
-
-
-> جاري فحص الـ 6700 سطر برمجى... [OK]
-
-> حالة السيرفر: مستقرة (Live)
-
-> المالك: الملك مصطفى
-
-
-
-
-⬅️ العودة للرئيسية
-
-"""
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     app.run(debug=True)
