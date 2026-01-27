@@ -1,10 +1,43 @@
 <!DOCTYPE html>
-<html>
+<html lang="ar" dir="rtl">
 <head>
-    <title>Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛡️ لوحة التحكم - Secure City IQ</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    <h1>Dashboard</h1>
-    <p>This is the dashboard page of the Flask application.</p>
+    <div class="container">
+        <div class="logo">🛡️</div>
+        <h1 class="title">لوحة التحكم</h1>
+        <p class="subtitle">مراقبة وإدارة نظام حماية المدينة الذكية</p>
+
+        <div class="stats">
+            <div class="card">
+                <h3>الأسطر البرمجية المفحوصة</h3>
+                <div class="stat-number">{{ scanned_lines }}</div>
+            </div>
+            <div class="card">
+                <h3>التهديدات المكتشفة</h3>
+                <div class="stat-number">{{ threats_detected }}</div>
+            </div>
+            <div class="card">
+                <h3>حالة الاتصال</h3>
+                <div class="stat-status">{{ connection_status }}</div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <button class="action-button">فحص الأنظمة</button>
+            <button class="action-button">تقارير الذكاء الاصطناعي</button>
+            <button class="action-button">حالة جدار الحماية</button>
+        </div>
+
+        <a href="/" class="button">العودة للصفحة الرئيسية</a>
+
+        <div class="footer">
+            <p>© 2026 - نظام حماية المدينة الذكية | جميع الحقوق محفوظة</p>
+        </div>
+    </div>
 </body>
 </html>
