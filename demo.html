@@ -327,12 +327,12 @@
         <div class="quick-actions">
             <h3>⚡ الإجراءات السريعة</h3>
             <div class="action-buttons">
-                <button class="action-btn" onclick="alert('خريطة التهديدات - نسخة تجريبية')">عرض خريطة التهديدات</button>
-                <button class="action-btn" onclick="alert('التحليلات المتقدمة - نسخة تجريبية')">التحليلات المتقدمة</button>
-                <button class="action-btn" onclick="alert('مراقبة الأجهزة - نسخة تجريبية')">مراقبة الأجهزة</button>
-                <button class="action-btn" onclick="alert('تحليل التشفير - نسخة تجريبية')">تحليل التشفير</button>
-                <button class="action-btn" onclick="alert('الإعدادات - نسخة تجريبية')">الإعدادات</button>
-                <button class="action-btn" onclick="alert('تم تصدير التقرير التجريبي')">تصدير التقرير</button>
+                <button class="action-btn" onclick="activateButton('threat-map')">عرض خريطة التهديدات</button>
+                <button class="action-btn" onclick="activateButton('analysis')">التحليلات المتقدمة</button>
+                <button class="action-btn" onclick="activateButton('device-monitoring')">مراقبة الأجهزة</button>
+                <button class="action-btn" onclick="activateButton('encryption')">تحليل التشفير</button>
+                <button class="action-btn" onclick="activateButton('settings')">الإعدادات</button>
+                <button class="action-btn" onclick="activateButton('export')">تصدير التقرير</button>
             </div>
         </div>
     </div>
@@ -415,6 +415,17 @@
         document.addEventListener('DOMContentLoaded', function() {
             initCharts();
         });
+
+        // Function to activate button action
+        async function activateButton(action) {
+            try {
+                const response = await fetch(`/run-action/${action}`);
+                const data = await response.json();
+                alert(data.message);
+            } catch (error) {
+                alert('خطأ في الاتصال - نسخة تجريبية');
+            }
+        }
     </script>
 </body>
 </html>

@@ -1,10 +1,12 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 
 # Create Flask app
 app = Flask(__name__)
 
 @app.route('/')
 def home():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
     try:
         with open(__file__, 'r', encoding='utf-8') as f:
             lines_count = len(f.readlines())
@@ -20,9 +22,9 @@ def login():
         password = request.form['password']
         if username == 'admin' and password == 'Admin123':
             session['logged_in'] = True
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('home'))
         else:
-            return render_template('login.html', error='Invalid credentials')
+            return render_template('login.html', error='بيانات الدخول غير صحيحة')
     return render_template('login.html')
 
 @app.route('/dashboard')
