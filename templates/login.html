@@ -1,47 +1,26 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-<<<<<<< HEAD
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
-    <div class="container">
-        <h1>تسجيل الدخول</h1>
-        <form method="POST">
-            <label for="username">اسم المستخدم:</label>
-            <input type="text" id="username" name="username" required>
-            <label for="password">كلمة المرور (الرمز):</label>
-            <input type="password" id="password" name="password" required>
-            <button type="submit">دخول</button>
-        </form>
-        {% if error %}
-        <p style="color: red;">{{ error }}</p>
-        {% endif %}
-=======
-    <title>دخول - Secure City IQ</title>
-    <style>
-        body { background: #0a0e27; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: 'Cairo', sans-serif; }
-        .login-box { background: rgba(26, 42, 78, 0.8); padding: 40px; border-radius: 15px; border: 1px solid #9b59b6; text-align: center; width: 320px; box-shadow: 0 0 20px rgba(155, 89, 182, 0.2); }
-        h2 { color: #9b59b6; margin-bottom: 25px; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid rgba(155, 89, 182, 0.3); background: #1a2a4e; color: white; outline: none; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; border: none; border-radius: 8px; background: #9b59b6; color: white; cursor: pointer; transition: 0.3s; font-weight: bold; }
-        button:hover { background: #bb8fce; transform: scale(1.02); }
-        .error { color: #ff4444; font-size: 13px; margin-top: 10px; }
-    </style>
-</head>
-<body>
-    <div class="login-box">
-        <h2>تسجيل الدخول 🛡️</h2>
-        <form action="/login" method="POST">
-            <input type="text" name="username" placeholder="اسم المستخدم" required>
-            <input type="password" name="password" placeholder="الرمز السري" required>
-            <button type="submit">دخول آمن</button>
-        </form>
-        {% if error %}<p class="error">{{ error }}</p>{% endif %}
->>>>>>> aa92acbbca02eec1b67919b785c79cc3144cd25c
-    </div>
-</body>
-</html>
+from flask import render_template, jsonify
+from app import app
+
+@app.route('/')
+@app.route('/index')
+def index():
+    return render_template('login.html', title='تسجيل الدخول - Secure City IQ')
+
+@app.route('/demo')
+def demo():
+    return render_template('demo.html', title='لوحة التحكم - نسخة تجريبية')
+
+@app.route('/run-action/<action_name>')
+def run_action(action_name):
+    # هذه الرسائل هي التي ستظهر عند الضغط على الأزرار
+    actions = {
+        'threat_map': 'جاري تحميل خريطة التهديدات الحية لمدينة واسط...',
+        'analysis': 'بدأ تحليل البيانات الأمنية الشاملة للمنطقة.',
+        'monitoring': 'جميع الأجهزة المتصلة تحت المراقبة المشفرة حالياً.',
+        'encryption': 'تم تفعيل نظام التشفير العسكري لجميع القنوات.',
+        'settings': 'جاري فتح إعدادات النظام المتقدمة...',
+        'export': 'جاري تجهيز التقرير الأمني بصيغة PDF...'
+    }
+    
+    message = actions.get(action_name, "تم تنفيذ الأمر بنجاح")
+    return jsonify({"status": "success", "message": message})
