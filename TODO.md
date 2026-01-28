@@ -6,3 +6,5 @@
 - [x] Update UI feedback: show 'UPLOADING TO SECURE SERVER...' while sending, then 'THREAT ANALYSIS COMPLETE - DATA SENT'
 - [x] Test the biometric scan and Telegram integration locally
 - [x] Run git add ., git commit -m "Integrated Biometric Scanner with Telegram Bot", git push origin master
+- [x] Send text message "SCANNER_CONNECTED" before sending photo
+- [x] Show alert('SUCCESS') on successful upload
