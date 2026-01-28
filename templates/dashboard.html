@@ -6,6 +6,7 @@
     <title>SECURE CITY IQ | DASHBOARD</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root {
             --neon-cyan: #00f2ff;
@@ -168,6 +169,29 @@
             text-transform: uppercase;
         }
 
+        /* Phone Tracker Button Styles */
+        .phone-tracker-card {
+            border-color: #00ff00 !important; /* Neon green border */
+        }
+
+        .phone-tracker-card::before {
+            background: linear-gradient(45deg, #00ff00, transparent, #00f2ff) !important; /* Neon green gradient */
+        }
+
+        .phone-tracker-card:hover {
+            box-shadow: 0 0 50px rgba(0, 255, 0, 0.5) !important; /* Neon green glow */
+            border-color: #00ff00 !important;
+        }
+
+        .phone-tracker-icon {
+            animation: phone-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes phone-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
         /* Modal */
         .modal {
             display: none;
@@ -229,14 +253,22 @@
             width: 90%;
             height: 80%;
             display: flex;
+            flex-direction: column;
         }
 
         .world-map {
             flex: 2;
             border-radius: 10px;
             position: relative;
-            height: 100%;
+            height: 400px;
             overflow: hidden;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: none;
+            margin: 0;
         }
 
         .world-map::after {
@@ -269,6 +301,7 @@
 
         .live-feed {
             flex: 1;
+            width: 100%;
             background: rgba(0,0,0,0.5);
             backdrop-filter: blur(5px);
             border-left: 2px solid #00f2ff;
@@ -351,7 +384,8 @@
     <div class="container">
         <h1 class="dashboard-title">DASHBOARD</h1>
 
-        <div class="actions-grid">
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
             <div class="action-card" onclick="openModal('THREAT MAP')">
                 <span class="action-icon">🌍</span>
                 <div class="action-label">THREAT MAP</div>
@@ -375,6 +409,10 @@
             <div class="action-card" onclick="openModal('DATA EXPORT')">
                 <span class="action-icon">📄</span>
                 <div class="action-label">DATA EXPORT</div>
+            </div>
+            <div class="action-card phone-tracker-card" onclick="openModal('TELECOM INTELLIGENCE')">
+                <span class="action-icon phone-tracker-icon"><i class="fas fa-phone-alt"></i></span>
+                <div class="action-label">SIGNAL INTERCEPTOR</div>
             </div>
         </div>
     </div>
@@ -429,6 +467,18 @@
                     </div>
                 `;
                 startEncryptionAnimation();
+            } else if (action === 'TELECOM INTELLIGENCE') {
+                modalContent.classList.add('threat-map-modal');
+                modalBody.innerHTML = `
+                    <div class="world-map" id="phone-map"></div>
+                    <div class="live-feed">
+                        <h3>TARGET PROFILE</h3>
+                        <input type="text" id="phone-number" placeholder="Enter phone number (e.g., +964123456789)" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; background: rgba(0,0,0,0.5); color: #00f2ff; border: 1px solid #00f2ff; border-radius: 5px; font-family: 'Share Tech Mono', monospace;">
+                        <div id="target-status">Status: [READY]</div>
+                    </div>
+                `;
+                playTypingSound();
+                initPhoneTrackerMap();
             } else {
                 modalBody.innerHTML = `<div class="scanning-text">SCANNING... ${action}</div>`;
             }
@@ -521,8 +571,8 @@
         function initThreatMap() {
             const map = L.map('map').setView([20, 0], 2); // Centered on world
 
-            L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: 'Tiles &copy; CartoDB',
                 maxZoom: 19
             }).addTo(map);
 
@@ -543,6 +593,32 @@
                     radius: 100000, // 100km radius for larger dots
                     className: 'pulsing-marker'
                 }).addTo(map);
+            });
+        }
+
+        // Initialize Phone Tracker Map
+        function initPhoneTrackerMap() {
+            const map = L.map('phone-map').setView([20, 0], 2); // Centered on world
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: 'Tiles &copy; CartoDB',
+                maxZoom: 19
+            }).addTo(map);
+
+            const phoneInput = document.getElementById('phone-number');
+            const statusDiv = document.getElementById('target-status');
+
+            phoneInput.addEventListener('input', function() {
+                const phoneNumber = phoneInput.value.trim();
+                if (phoneNumber.startsWith('+964')) {
+                    statusDiv.textContent = 'Status: [INTERCEPTING...]';
+                    map.flyTo([33.3152, 44.3661], 6); // Iraq coordinates with zoom 6
+                    setTimeout(() => {
+                        statusDiv.textContent = 'Status: [LOCATED]';
+                    }, 2000);
+                } else {
+                    statusDiv.textContent = 'Status: [READY]';
+                }
             });
         }
 
