@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 
-app = Flask(name)
+app = Flask(__name__)
 app.secret_key = 'secure_city_iq_secret_key' 
 
 # بيانات الدخول التي طلبتها
@@ -49,5 +49,5 @@ def logout():
     session.pop('logged_in', None)
     return redirect(url_for('login'))
 
-if name == 'main':
+if __name__ == '__main__':
     app.run(debug=True)
