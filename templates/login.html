@@ -1,26 +1,26 @@
-from flask import render_template, jsonify
-from app import app
-
-@app.route('/')
-@app.route('/index')
-def index():
-    return render_template('login.html', title='تسجيل الدخول - Secure City IQ')
-
-@app.route('/demo')
-def demo():
-    return render_template('demo.html', title='لوحة التحكم - نسخة تجريبية')
-
-@app.route('/run-action/<action_name>')
-def run_action(action_name):
-    # هذه الرسائل هي التي ستظهر عند الضغط على الأزرار
-    actions = {
-        'threat_map': 'جاري تحميل خريطة التهديدات الحية لمدينة واسط...',
-        'analysis': 'بدأ تحليل البيانات الأمنية الشاملة للمنطقة.',
-        'monitoring': 'جميع الأجهزة المتصلة تحت المراقبة المشفرة حالياً.',
-        'encryption': 'تم تفعيل نظام التشفير العسكري لجميع القنوات.',
-        'settings': 'جاري فتح إعدادات النظام المتقدمة...',
-        'export': 'جاري تجهيز التقرير الأمني بصيغة PDF...'
-    }
-    
-    message = actions.get(action_name, "تم تنفيذ الأمر بنجاح")
-    return jsonify({"status": "success", "message": message})
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - Secure City IQ</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>تسجيل الدخول إلى Secure City IQ</h1>
+        <form method="POST" action="{{ url_for('login') }}">
+            <label for="username">اسم المستخدم:</label>
+            <input type="text" id="username" name="username" required>
+            
+            <label for="password">كلمة المرور:</label>
+            <input type="password" id="password" name="password" required>
+            
+            <button type="submit">دخول</button>
+        </form>
+        {% if error %}
+            <p class="error">{{ error }}</p>
+        {% endif %}
+    </div>
+</body>
+</html>
