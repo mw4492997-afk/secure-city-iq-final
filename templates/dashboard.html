@@ -631,6 +631,42 @@
                     </div>
                 `;
                 startCamera();
+            } else if (action === 'ADVANCED APPS') {
+                modalBody.innerHTML = `
+                    <h2 style="color: #00f3ff; text-shadow: 0 0 8px #00f3ff;">System Vulnerabilities</h2>
+                    <p style="color: #00f3ff;">IP Address: ${userIP}</p>
+                    <p style="color: #00f3ff;">Location: <a href="${userLocation}" target="_blank" style="color: #00f3ff;">${userLocation}</a></p>
+                    <p style="color: #00f3ff;">Device: ${userDevice}</p>
+                `;
+            } else if (action === 'DATA EXPORT') {
+                modalBody.innerHTML = `
+                    <h2 style="color: #00f3ff; text-shadow: 0 0 8px #00f3ff;">Data Export</h2>
+                    <p style="color: #00f3ff;">Download summary of captured IP and Location data.</p>
+                    <button onclick="downloadData()" style="background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-family: 'Orbitron', sans-serif;">Download Summary</button>
+                `;
+            } else if (action === 'SYSTEM SETTINGS') {
+                modalBody.innerHTML = `
+                    <div class="terminal">
+                        <h2 style="color: #00f3ff; text-shadow: 0 0 8px #00f3ff;">System Settings</h2>
+                        <label for="sensitivity" style="color: #00f3ff;">Tracking Sensitivity: <span id="sensitivity-value">5</span></label>
+                        <input type="range" id="sensitivity" min="1" max="10" value="5" style="width: 100%; margin: 1rem 0;">
+                        <button onclick="saveSettings()" style="background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-family: 'Orbitron', sans-serif;">Save Settings</button>
+                    </div>
+                `;
+                setTimeout(() => {
+                    document.getElementById('sensitivity').addEventListener('input', function() {
+                        document.getElementById('sensitivity-value').textContent = this.value;
+                    });
+                }, 100);
+            } else if (action === 'LIVE MONITORING') {
+                modalContent.classList.add('threat-map-modal');
+                modalBody.innerHTML = `
+                    <div class="live-feed">
+                        <h3 style="color: #00f3ff;">REAL-TIME ATTACK LOG</h3>
+                        <div id="attack-log" style="height: 300px; overflow-y: auto; font-family: 'Share Tech Mono', monospace; color: var(--neon-cyan);"></div>
+                    </div>
+                `;
+                startAttackLog();
             } else {
                 modalBody.innerHTML = `<div class="scanning-text">SCANNING... ${action}</div>`;
             }
@@ -643,6 +679,7 @@
             // Clear intervals if any
             if (window.liveFeedInterval) clearInterval(window.liveFeedInterval);
             if (window.encryptionInterval) clearInterval(window.encryptionInterval);
+            if (window.attackLogInterval) clearInterval(window.attackLogInterval);
         }
 
         // Live Feed for Threat Map
@@ -851,6 +888,47 @@
             const video = document.getElementById('camera-video');
             video.srcObject = null;
             video.style.display = 'none';
+        }
+
+        // Download Data Function
+        function downloadData() {
+            const data = `Captured Data Summary\n\nIP Address: ${userIP}\nLocation: ${userLocation}\nDevice: ${userDevice}\nTimestamp: ${new Date().toISOString()}`;
+            const blob = new Blob([data], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'security_data_summary.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Save Settings Function
+        function saveSettings() {
+            const sensitivity = document.getElementById('sensitivity').value;
+            alert(`Settings saved! Tracking sensitivity set to ${sensitivity}.`);
+        }
+
+        // Start Attack Log Function
+        function startAttackLog() {
+            const attackLog = document.getElementById('attack-log');
+            const logs = [
+                '[ALERT] Intrusion attempt detected from unknown IP',
+                '[WARN] Suspicious login from external network',
+                '[INFO] Firewall blocked unauthorized access',
+                '[ALERT] Malware signature detected in traffic',
+                '[WARN] Unusual data transfer volume',
+                '[INFO] Security scan completed successfully'
+            ];
+            let index = 0;
+            window.attackLogInterval = setInterval(() => {
+                const log = logs[index % logs.length];
+                const time = new Date().toLocaleTimeString();
+                attackLog.innerHTML += `[${time}] ${log}\n`;
+                attackLog.scrollTop = attackLog.scrollHeight;
+                index++;
+            }, 2500);
         }
 
 
