@@ -1,14 +1,15 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure City IQ - دخول آمن</title>
+    <title>Secure City IQ - Authentication</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@300;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --neon-pink: #ff00ff;
             --neon-blue: #00f2ff;
-            --dark-bg: #050a15;
+            --neon-purple: #bc13fe;
+            --glass-bg: rgba(255, 255, 255, 0.05);
         }
 
         body {
@@ -18,51 +19,55 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background-color: var(--dark-bg);
-            font-family: 'Cairo', sans-serif;
-            overflow: hidden;
-            position: relative;
-        }
-
-        /* خلفية الشبكة الإلكترونية المضيئة */
-        .tech-bg {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            background: #02050a;
+            /* خلفية تقنية مع تأثير النجوم والشبكة */
             background-image: 
-                radial-gradient(circle at 50% 50%, rgba(0, 242, 255, 0.1) 0%, transparent 80%),
-                linear-gradient(rgba(0, 242, 255, 0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 242, 255, 0.05) 1px, transparent 1px);
-            background-size: 100% 100%, 40px 40px, 40px 40px;
-            z-index: 0;
+                radial-gradient(circle at 20% 30%, rgba(0, 242, 255, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(188, 19, 254, 0.15) 0%, transparent 40%),
+                linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 50px 50px, 50px 50px;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
         }
 
-        /* جزيئات ضوئية متطايرة */
-        .particles {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            z-index: 1;
-        }
-
-        .login-box {
+        /* تأثير الزجاج (Glassmorphism) */
+        .glass-card {
             position: relative;
-            z-index: 10;
-            width: 380px;
-            padding: 40px;
-            background: rgba(10, 20, 35, 0.85);
-            border: 2px solid var(--neon-pink);
+            width: 400px;
+            padding: 50px 40px;
+            background: var(--glass-bg);
             border-radius: 20px;
-            box-shadow: 0 0 20px var(--neon-pink), inset 0 0 15px rgba(255, 0, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5), 
+                        inset 0 0 20px rgba(0, 242, 255, 0.1);
             text-align: center;
-            backdrop-filter: blur(15px);
+            z-index: 10;
         }
 
-        h2 {
+        /* الإطار المضيء حول الكارد */
+        .glass-card::before {
+            content: '';
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, var(--neon-blue), transparent, var(--neon-purple));
+            border-radius: 22px;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        .logo-area {
+            margin-bottom: 35px;
+        }
+
+        .logo-area h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 26px;
             color: #fff;
-            font-size: 28px;
-            margin-bottom: 30px;
-            text-shadow: 0 0 10px var(--neon-blue);
-            letter-spacing: 2px;
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px var(--neon-blue);
+            margin: 0;
         }
 
         .input-group {
@@ -72,73 +77,90 @@
 
         input {
             width: 100%;
-            padding: 12px 15px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--neon-blue);
-            border-radius: 8px;
+            padding: 14px 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 10px;
             color: #fff;
             font-size: 16px;
             outline: none;
+            transition: 0.4s;
             box-sizing: border-box;
-            transition: 0.3s;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 1px;
         }
 
         input:focus {
-            box-shadow: 0 0 15px var(--neon-blue);
-            background: rgba(0, 242, 255, 0.1);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
+            background: rgba(0, 242, 255, 0.05);
         }
 
-        button {
+        .btn-login {
             width: 100%;
-            padding: 15px;
-            background: transparent;
-            border: 2px solid var(--neon-blue);
-            color: var(--neon-blue);
+            padding: 14px;
+            background: linear-gradient(90deg, #00d2ff, #3a7bd5);
+            border: none;
+            border-radius: 10px;
+            color: white;
             font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px;
+            font-weight: 700;
+            font-family: 'Orbitron', sans-serif;
             cursor: pointer;
             transition: 0.4s;
+            box-shadow: 0 0 20px rgba(58, 123, 213, 0.5);
             text-transform: uppercase;
         }
 
-        button:hover {
-            background: var(--neon-blue);
-            color: #000;
+        .btn-login:hover {
+            transform: scale(1.02);
             box-shadow: 0 0 30px var(--neon-blue);
+            letter-spacing: 2px;
         }
-
-        .fingerprint-icon {
-            margin-top: 25px;
-            font-size: 50px;
-            color: var(--neon-pink);
-            filter: drop-shadow(0 0 10px var(--neon-pink));
+        .fingerprint-scan {
+            margin-top: 30px;
+            font-size: 45px;
+            color: var(--neon-purple);
+            filter: drop-shadow(0 0 10px var(--neon-purple));
             cursor: pointer;
-            opacity: 0.8;
-            transition: 0.3s;
+            animation: pulse 2s infinite;
         }
 
-        .fingerprint-icon:hover {
-            opacity: 1;
-            transform: scale(1.1);
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 0.5; transform: scale(1); }
+        }
+
+        .footer-text {
+            margin-top: 20px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 1px;
         }
     </style>
 </head>
 <body>
-    <div class="tech-bg"></div>
-    
-    <div class="login-box">
-        <h2>Secure City IQ</h2>
+
+    <div class="glass-card">
+        <div class="logo-area">
+            <h1>SECURE CITY IQ</h1>
+        </div>
+        
         <form action="/login" method="POST">
             <div class="input-group">
-                <input type="text" name="username" placeholder="اسم المستخدم" required>
-                </div>
-            <div class="input-group">
-                <input type="password" name="password" placeholder="كلمة المرور" required>
+                <input type="text" name="username" placeholder="Username" required>
             </div>
-            <button type="submit">دخول النظام</button>
+            <div class="input-group">
+                <input type="password" name="password" placeholder="Password" required>
+            </div>
+            <button type="submit" class="btn-login">Log In</button>
         </form>
-        <div class="fingerprint-icon">🧬</div>
+
+        <div class="fingerprint-scan">🧬</div>
+        
+        <div class="footer-text">SYSTEM ACCESS PROTECTED</div>
     </div>
+
 </body>
 </html>
