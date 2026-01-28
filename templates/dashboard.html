@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SECURE CITY IQ | DASHBOARD</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     <style>
         :root {
             --neon-cyan: #00f2ff;
@@ -232,25 +233,19 @@
 
         .world-map {
             flex: 2;
-            background: #000;
             border-radius: 10px;
             position: relative;
-        }
-
-        .world-map svg {
-            width: 100%;
             height: 100%;
         }
 
-        .threat-point {
-            fill: red;
-            animation: pulse 2s infinite;
+        .pulsing-marker {
+            animation: marker-pulse 2s infinite;
         }
 
-        @keyframes pulse {
-            0% { r: 5; opacity: 1; }
-            50% { r: 10; opacity: 0.5; }
-            100% { r: 5; opacity: 1; }
+        @keyframes marker-pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         .live-feed {
@@ -392,23 +387,14 @@
             if (action === 'THREAT MAP') {
                 modalContent.classList.add('threat-map-modal');
                 modalBody.innerHTML = `
-                    <div class="world-map">
-                        <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
-                            <!-- Simple world map outline -->
-                            <path d="M200,200 Q300,150 400,200 T600,200 Q700,250 800,200" stroke="#00f2ff" fill="none" stroke-width="2"/>
-                            <path d="M150,250 Q250,200 350,250 T550,250 Q650,300 750,250" stroke="#00f2ff" fill="none" stroke-width="2"/>
-                            <path d="M100,300 Q200,250 300,300 T500,300 Q600,350 700,300" stroke="#00f2ff" fill="none" stroke-width="2"/>
-                            <!-- Pulsing threat points -->
-                            <circle class="threat-point" cx="300" cy="200" r="5"/>
-                            <circle class="threat-point" cx="500" cy="250" r="5"/>
-                            <circle class="threat-point" cx="700" cy="300" r="5"/>
-                        </svg>
-                    </div>
+                    <div class="world-map" id="map"></div>
                     <div class="live-feed">
                         <h3>LIVE FEED</h3>
                         <div id="feed-content"></div>
                     </div>
                 `;
+                playBeep();
+                initThreatMap();
                 startLiveFeed();
             } else if (action === 'ENCRYPTION ANALYSIS') {
                 modalContent.classList.add('encryption-modal');
@@ -486,6 +472,60 @@
             }, 100);
         }
 
+        // Audio Functions
+        function playBeep() {
+            const audio = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3');
+            audio.play();
+        }
+
+        function playTypingSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+            oscillator.type = 'square';
+
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.05);
+        }
+
+        // Initialize Threat Map
+        function initThreatMap() {
+            const map = L.map('map').setView([20, 0], 2); // Centered on world
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Add pulsing red circles at real world coordinates
+            const cities = [
+                { name: 'London', lat: 51.5074, lng: -0.1278 },
+                { name: 'Dubai', lat: 25.2048, lng: 55.2708 },
+                { name: 'New York', lat: 40.7128, lng: -74.0060 },
+                { name: 'Tokyo', lat: 35.6762, lng: 139.6503 },
+                { name: 'Sydney', lat: -33.8688, lng: 151.2093 }
+            ];
+
+            cities.forEach(city => {
+                L.circle([city.lat, city.lng], {
+                    color: 'red',
+                    fillColor: 'red',
+                    fillOpacity: 0.8,
+                    radius: 50000, // 50km radius
+                    className: 'pulsing-marker'
+                }).addTo(map);
+            });
+        }
+
         // Close modal on outside click
         window.onclick = function(event) {
             const modal = document.getElementById('glass-modal');
@@ -494,5 +534,6 @@
             }
         }
     </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </body>
 </html>

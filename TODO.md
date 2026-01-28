@@ -1,13 +1,10 @@
-# TODO: Implementing Live Threat Map and Encryption Analysis Logic
+# TODO: Enhance Threat Map with Real Maps, Dynamic Points, and Cyber Audio
 
-## Completed Tasks
-- [x] Updated `templates/dashboard.html` CSS with styles for threat map and encryption analysis modals
-- [x] Modified modal HTML structure to support dynamic content
-- [x] Updated JavaScript `openModal` function to handle "THREAT MAP" and "ENCRYPTION ANALYSIS" actions
-- [x] Added SVG world map with pulsing threat points for Threat Map
-- [x] Implemented live feed sidebar with fake log entries for Threat Map
-- [x] Added terminal-style animation with scrolling Matrix code and progress bar for Encryption Analysis
-- [x] Ensured all modals maintain Glassmorphism style with #00f2ff and #bc13fe borders
-
-## Remaining Tasks
-- [ ] Perform git add ., git commit -m "Integrated Live Map and Encryption Logic", and git push origin master
+- [x] Add Leaflet.js CDN link to templates/dashboard.html head
+- [x] Replace static SVG map with interactive Leaflet.js map using CartoDB DarkMatter tiles
+- [x] Add 5-10 dynamic pulsing red markers at random geographic coordinates
+- [x] Integrate high-tech "Beep/Scanner" sound effect that plays once when THREAT MAP modal opens
+- [x] Add subtle "Typing" sound for Live Feed log entries
+- [ ] Ensure map container fits perfectly within the Glassmorphism modal
+- [x] Confirm Live Feed scrolls automatically to the bottom as new logs appear
+- [ ] Run git add ., git commit -m "Upgraded Map to Interactive Leaflet and added Cyber Audio", and git push origin master
