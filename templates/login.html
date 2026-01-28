@@ -3,24 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تسجيل الدخول - Secure City IQ</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>Secure City IQ - تسجيل الدخول</title>
+    <style>
+        :root {
+            --primary-glow: #00d4ff;
+            --bg-color: #040b1a;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: radial-gradient(circle at center, #0a192f 0%, var(--bg-color) 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            color: white;
+        }
+
+        /* تأثير الخطوط التكنولوجية في الخلفية */
+        body::before {
+            content: "";
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                linear-gradient(rgba(0, 212, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 212, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: rotate(15deg);
+            z-index: -1;
+        }
+
+        .login-card {
+            background: rgba(10, 25, 47, 0.8);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2), inset 0 0 10px rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            width: 350px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            margin-bottom: 30px;
+            font-size: 24px;
+            text-shadow: 0 0 10px var(--primary-glow);
+            letter-spacing: 1px;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-top: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 5px;
+            color: white;
+            outline: none;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            border-color: var(--primary-glow);
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #00d4ff, #0055ff);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            text-transform: uppercase;
+            box-shadow: 0 0 15px rgba(0, 85, 255, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 25px var(--primary-glow);
+        }
+
+        .fingerprint {
+            margin-top: 20px;
+            font-size: 40px;
+            opacity: 0.6;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>تسجيل الدخول إلى Secure City IQ</h1>
-        <form method="POST" action="{{ url_for('login') }}">
-            <label for="username">اسم المستخدم:</label>
-            <input type="text" id="username" name="username" required>
-            
-            <label for="password">كلمة المرور:</label>
-            <input type="password" id="password" name="password" required>
-            
-            <button type="submit">دخول</button>
+    <div class="login-card">
+        <h2>Secure City IQ</h2>
+        <form action="/login" method="POST">
+            <div class="input-group">
+                <input type="text" name="username" placeholder="اسم المستخدم" required>
+            </div>
+            <div class="input-group">
+                <input type="password" name="password" placeholder="كلمة المرور" required>
+            </div>
+            <button type="submit">دخول النظام</button>
         </form>
-        {% if error %}
-            <p class="error">{{ error }}</p>
-        {% endif %}
+        <div class="fingerprint">🛡️</div>
     </div>
 </body>
 </html>
