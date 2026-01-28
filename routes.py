@@ -29,7 +29,7 @@ def login():
 def demo():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
-    return render_template('demo.html')
+    return render_template('dashboard.html')
 
 @app.route('/run-action/<action_name>')
 def run_action(action_name):
