@@ -186,7 +186,6 @@
             border-radius: 24px;
             padding: 3rem;
             text-align: center;
-            max-width: 500px;
             width: 90%;
         }
 
@@ -221,6 +220,105 @@
             color: var(--neon-cyan);
             font-size: 24px;
             cursor: pointer;
+        }
+
+        /* Threat Map Styles */
+        .threat-map-modal {
+            max-width: 90%;
+            width: 90%;
+            height: 80%;
+            display: flex;
+        }
+
+        .world-map {
+            flex: 2;
+            background: #000;
+            border-radius: 10px;
+            position: relative;
+        }
+
+        .world-map svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .threat-point {
+            fill: red;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { r: 5; opacity: 1; }
+            50% { r: 10; opacity: 0.5; }
+            100% { r: 5; opacity: 1; }
+        }
+
+        .live-feed {
+            flex: 1;
+            background: rgba(0,0,0,0.5);
+            border-left: 1px solid var(--neon-cyan);
+            padding: 1rem;
+            overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--neon-cyan);
+            font-size: 12px;
+        }
+
+        .live-feed h3 {
+            margin-bottom: 1rem;
+        }
+
+        /* Encryption Analysis Styles */
+        .encryption-modal {
+            max-width: 80%;
+            width: 80%;
+            height: 60%;
+        }
+
+        .terminal {
+            background: #000;
+            color: #00ff00;
+            font-family: 'Share Tech Mono', monospace;
+            padding: 1rem;
+            border-radius: 10px;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .scrolling-code {
+            height: calc(100% - 50px);
+            overflow: hidden;
+            white-space: pre;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        .progress-container {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 20px;
+            background: #333;
+            border: 1px solid #00ff00;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #00ff00, #00f2ff);
+            width: 0%;
+            transition: width 0.1s;
+        }
+
+        .progress-text {
+            position: absolute;
+            bottom: 35px;
+            left: 10px;
+            color: #00ff00;
+            font-size: 16px;
         }
     </style>
 </head>
@@ -266,9 +364,9 @@
     </div>
 
     <div class="modal" id="glass-modal">
-        <div class="modal-content">
+        <div class="modal-content" id="modal-content">
             <button class="close-btn" onclick="closeModal()">×</button>
-            <div class="scanning-text" id="modal-text">SCANNING...</div>
+            <div id="modal-body"></div>
         </div>
     </div>
 
@@ -287,12 +385,105 @@
 
         // Modal Functions
         function openModal(action) {
-            document.getElementById('modal-text').textContent = `SCANNING... ${action}`;
+            const modalContent = document.getElementById('modal-content');
+            const modalBody = document.getElementById('modal-body');
+            modalContent.className = 'modal-content'; // Reset classes
+
+            if (action === 'THREAT MAP') {
+                modalContent.classList.add('threat-map-modal');
+                modalBody.innerHTML = `
+                    <div class="world-map">
+                        <svg viewBox="0 0 1000 500" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Simple world map outline -->
+                            <path d="M200,200 Q300,150 400,200 T600,200 Q700,250 800,200" stroke="#00f2ff" fill="none" stroke-width="2"/>
+                            <path d="M150,250 Q250,200 350,250 T550,250 Q650,300 750,250" stroke="#00f2ff" fill="none" stroke-width="2"/>
+                            <path d="M100,300 Q200,250 300,300 T500,300 Q600,350 700,300" stroke="#00f2ff" fill="none" stroke-width="2"/>
+                            <!-- Pulsing threat points -->
+                            <circle class="threat-point" cx="300" cy="200" r="5"/>
+                            <circle class="threat-point" cx="500" cy="250" r="5"/>
+                            <circle class="threat-point" cx="700" cy="300" r="5"/>
+                        </svg>
+                    </div>
+                    <div class="live-feed">
+                        <h3>LIVE FEED</h3>
+                        <div id="feed-content"></div>
+                    </div>
+                `;
+                startLiveFeed();
+            } else if (action === 'ENCRYPTION ANALYSIS') {
+                modalContent.classList.add('encryption-modal');
+                modalBody.innerHTML = `
+                    <div class="terminal">
+                        <div class="scrolling-code" id="scrolling-code"></div>
+                        <div class="progress-text">[DECRYPTING CORE DATA...]</div>
+                        <div class="progress-container">
+                            <div class="progress-bar" id="progress-bar"></div>
+                        </div>
+                    </div>
+                `;
+                startEncryptionAnimation();
+            } else {
+                modalBody.innerHTML = `<div class="scanning-text">SCANNING... ${action}</div>`;
+            }
+
             document.getElementById('glass-modal').style.display = 'flex';
         }
 
         function closeModal() {
             document.getElementById('glass-modal').style.display = 'none';
+            // Clear intervals if any
+            if (window.liveFeedInterval) clearInterval(window.liveFeedInterval);
+            if (window.encryptionInterval) clearInterval(window.encryptionInterval);
+        }
+
+        // Live Feed for Threat Map
+        function startLiveFeed() {
+            const feedContent = document.getElementById('feed-content');
+            const logs = [
+                '[WARN] Unauthorized access from IP: 192.168.1.100',
+                '[ALERT] Suspicious activity detected in sector 7',
+                '[INFO] Firewall breach attempt blocked',
+                '[WARN] Unauthorized access from IP: 10.0.0.50',
+                '[ALERT] Malware signature detected',
+                '[INFO] Intrusion prevention system activated'
+            ];
+            let index = 0;
+            window.liveFeedInterval = setInterval(() => {
+                const log = logs[index % logs.length];
+                const time = new Date().toLocaleTimeString();
+                feedContent.innerHTML += `[${time}] ${log}\n`;
+                feedContent.scrollTop = feedContent.scrollHeight;
+                index++;
+            }, 3000);
+        }
+
+        // Encryption Animation
+        function startEncryptionAnimation() {
+            const scrollingCode = document.getElementById('scrolling-code');
+            const progressBar = document.getElementById('progress-bar');
+            const matrixChars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()';
+            let code = '';
+            let progress = 0;
+
+            window.encryptionInterval = setInterval(() => {
+                // Add new line of code
+                let line = '';
+                for (let i = 0; i < 80; i++) {
+                    line += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                }
+                code += line + '\n';
+                scrollingCode.textContent = code;
+                scrollingCode.scrollTop = scrollingCode.scrollHeight;
+
+                // Update progress
+                progress += 1;
+                if (progress > 100) progress = 100;
+                progressBar.style.width = progress + '%';
+
+                if (progress >= 100) {
+                    clearInterval(window.encryptionInterval);
+                }
+            }, 100);
         }
 
         // Close modal on outside click
