@@ -1,25 +1,11 @@
-import RadarHUD from '../components/RadarHUD';
-import CyberPulse from '../components/CyberPulse';
-import TerminalLogs from '../components/TerminalLogs';
-
-export default function Home() {
-  return (
-    <div className="container">
-      <h1>Elite Command v2.0</h1>
-      <RadarHUD />
-      <CyberPulse />
-      <TerminalLogs />
-    </div>
-  );
-}
 "use client";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import CyberPulse from "@/components/CyberPulse";
-import RadarHUD from "@/components/RadarHUD";
-import ThreatCard from "@/components/ThreatCard";
-import TerminalLogs from "@/components/TerminalLogs";
+import CyberPulse from "../components/CyberPulse";
+import RadarHUD from "../components/RadarHUD";
+import ThreatCard from "../components/ThreatCard";
+import TerminalLogs from "../components/TerminalLogs";
 
 export default function Home() {
   const [emergency, setEmergency] = useState(false);
