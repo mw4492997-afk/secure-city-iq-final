@@ -6,8 +6,8 @@ import { ShieldCheck, Lock, Unlock, Fingerprint, Cpu, Key, User } from "lucide-r
 
 export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: () => void }) {
   const [stage, setStage] = useState<"login" | "auth" | "scanning" | "decoding" | "granted">("login");
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("12345");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -96,12 +96,13 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
                   <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">User ID</label>
                 </div>
                 <input
-                  type="text"
+                  type="password"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-zinc-900/50 border border-[var(--active-neon)]/30 rounded-lg px-4 py-3 text-[var(--active-neon)] font-mono text-sm focus:border-[var(--active-neon)] focus:outline-none transition-all"
                   placeholder="Enter User ID"
                   disabled={isSubmitting}
+                  autoComplete="off"
                 />
               </div>
 
@@ -117,6 +118,7 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
                   className="w-full bg-zinc-900/50 border border-[var(--active-neon)]/30 rounded-lg px-4 py-3 text-[var(--active-neon)] font-mono text-sm focus:border-[var(--active-neon)] focus:outline-none transition-all"
                   placeholder="Enter Access Code"
                   disabled={isSubmitting}
+                  autoComplete="new-password"
                 />
               </div>
 
