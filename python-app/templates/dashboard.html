@@ -894,18 +894,57 @@
             }, 200);
 
             try {
-                const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-                const data = await response.json();
-                const htmlContent = data.contents;
+                const response = await fetch('/scan-vulnerability', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: url })
+                });
 
-                const flags = findFlags(htmlContent);
-                const comments = findComments(htmlContent);
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Scan failed');
+                }
 
-                resultsDiv.innerHTML = `
-                    <h3>Web Scan Results for ${url}:</h3>
-                    <p><strong>Flags Found:</strong> ${flags.join(', ') || 'None'}</p>
-                    <p><strong>Comments:</strong> ${comments.join('; ') || 'None'}</p>
-                `;
+                const results = await response.json();
+
+                let resultsHtml = `<h3>Vulnerability Scan Results for ${results.url}:</h3>`;
+                resultsHtml += `<p><strong>Severity Level:</strong> <span style="color: ${results.severity === 'HIGH' ? 'red' : results.severity === 'MEDIUM' ? 'orange' : 'green'};">${results.severity}</span></p>`;
+
+                if (results.ssl_info && results.ssl_info.issues.length > 0) {
+                    resultsHtml += `<h4>SSL Certificate Issues:</h4><ul>`;
+                    results.ssl_info.issues.forEach(issue => {
+                        resultsHtml += `<li style="color: red;">${issue}</li>`;
+                    });
+                    resultsHtml += `</ul>`;
+                }
+
+                if (results.security_headers && results.security_headers.missing_critical && results.security_headers.missing_critical.length > 0) {
+                    resultsHtml += `<h4>Missing Security Headers:</h4><ul>`;
+                    results.security_headers.missing_critical.forEach(header => {
+                        resultsHtml += `<li style="color: orange;">${header}</li>`;
+                    });
+                    resultsHtml += `</ul>`;
+                }
+
+                if (results.vulnerabilities && results.vulnerabilities.length > 0) {
+                    resultsHtml += `<h4>Detected Vulnerabilities:</h4><ul>`;
+                    results.vulnerabilities.forEach(vuln => {
+                        resultsHtml += `<li style="color: red;">${vuln}</li>`;
+                    });
+                    resultsHtml += `</ul>`;
+                }
+
+                if (results.open_ports && results.open_ports.length > 0) {
+                    resultsHtml += `<h4>Open Ports:</h4><p>${results.open_ports.join(', ')}</p>`;
+                }
+
+                if (results.vulnerabilities.length === 0 && (!results.ssl_info || results.ssl_info.issues.length === 0) && (!results.security_headers || results.security_headers.missing_critical.length === 0)) {
+                    resultsHtml += `<p style="color: green;">No critical vulnerabilities detected. However, regular security audits are recommended.</p>`;
+                }
+
+                resultsDiv.innerHTML = resultsHtml;
             } catch (error) {
                 resultsDiv.innerHTML = `<p>Error scanning website: ${error.message}</p>`;
             } finally {

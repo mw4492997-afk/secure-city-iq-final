@@ -1,11 +1,14 @@
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
+from vulnerability_scanner import VulnerabilityScanner
 
 app = Flask(__name__)
-app.secret_key = 'secure_city_iq_secret_key' 
+app.secret_key = 'secure_city_iq_secret_key'
 
 # بيانات الدخول التي طلبتها
 ADMIN_USER = "admin"
 ADMIN_PASS = "1234"
+
+scanner = VulnerabilityScanner()
 
 @app.route('/')
 def home():
@@ -43,6 +46,24 @@ def run_action(action_name):
     }
     message = actions.get(action_name, "إجراء غير معروف")
     return jsonify({"status": "success", "message": message})
+
+@app.route('/scan-vulnerability', methods=['POST'])
+def scan_vulnerability():
+    # Temporarily allow testing without authentication
+    # if not session.get('logged_in'):
+    #     return jsonify({"error": "غير مصرح لك"}), 401
+
+    data = request.get_json()
+    url = data.get('url', '').strip()
+
+    if not url:
+        return jsonify({"error": "يجب إدخال رابط صحيح"}), 400
+
+    try:
+        results = scanner.scan_url(url)
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": f"خطأ في الفحص: {str(e)}"}), 500
 
 @app.route('/logout')
 def logout():
