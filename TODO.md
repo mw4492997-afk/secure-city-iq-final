@@ -1,6 +1,12 @@
-# TODO: Make /login the default page
+# Cyberpunk Login Page Transformation
 
-- [x] Modify app/login/page.tsx: Add localStorage.setItem('session', 'active') after successful password check.
-- [x] Modify app/page.tsx: Import useRouter, add useEffect to check session and redirect to /login if not active.
-- [x] Test the application to ensure redirection works.
-- [x] Commit and push changes to main branch with git push origin main --force.
+## Tasks
+- [ ] Update title to 'AUTHENTICATION REQUIRED' with bright green styling
+- [ ] Add user icon to username input
+- [ ] Add lock icon to password input
+- [ ] Change button text to 'ACCESS SYSTEM' with glowing effect
+- [ ] Add fingerprint icon below button with pulse animation
+- [ ] Ensure glassmorphism for auth card with neon green borders
+- [ ] Confirm background particles and scan line are active
+- [ ] Test the page functionality
+- [ ] Commit and push changes to git
