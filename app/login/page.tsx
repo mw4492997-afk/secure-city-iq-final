@@ -11,6 +11,7 @@ export default function Login() {
 
   const handleAccess = () => {
     if (password === "admin123") {
+      localStorage.setItem('session', 'active');
       router.push("/");
     }
   };

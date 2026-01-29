@@ -1,7 +1,6 @@
-# TODO: Fix Build Errors
+# TODO: Make /login the default page
 
-- [x] Edit app/layout.tsx: Comment out imports for VisualEditsMessenger and ErrorReporter, and their usages in JSX.
-- [x] Run npm audit fix --force to fix security vulnerabilities.
-- [x] Execute git add . to stage changes.
-- [x] Execute git commit -m 'Fix build errors and imports'.
-- [x] Execute git push origin main --force to push changes.
+- [x] Modify app/login/page.tsx: Add localStorage.setItem('session', 'active') after successful password check.
+- [x] Modify app/page.tsx: Import useRouter, add useEffect to check session and redirect to /login if not active.
+- [x] Test the application to ensure redirection works.
+- [x] Commit and push changes to main branch with git push origin main --force.

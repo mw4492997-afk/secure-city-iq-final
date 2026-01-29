@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import CyberPulse from "../components/CyberPulse";
 import RadarHUD from "../components/RadarHUD";
@@ -8,7 +9,14 @@ import ThreatCard from "../components/ThreatCard";
 import TerminalLogs from "../components/TerminalLogs";
 
 export default function Home() {
+  const router = useRouter();
   const [emergency, setEmergency] = useState(false);
+
+  useEffect(() => {
+    if (localStorage.getItem('session') !== 'active') {
+      router.push('/login');
+    }
+  }, [router]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-emergency", emergency.toString());
