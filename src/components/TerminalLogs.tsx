@@ -41,7 +41,7 @@ export default function TerminalLogs({ onEmergency }: { onEmergency?: () => void
     }
   }, [logs]);
 
-  const handleCommand = (e: React.FormEvent) => {
+  const handleCommand = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
 
@@ -49,29 +49,75 @@ export default function TerminalLogs({ onEmergency }: { onEmergency?: () => void
     const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
     let response = "";
 
-    switch (cmd) {
-      case "help":
-        response = "COMMANDS: SCAN, NET_STAT, CLEAR, VERSION, LOCKDOWN, REBOOT";
-        break;
-      case "scan":
-        response = "Scanning ports 1-1024... 80/tcp OPEN, 443/tcp OPEN, 22/tcp CLOSED.";
-        break;
-      case "net_stat":
-        response = "ESTABLISHED: 14 | TIME_WAIT: 3 | SYN_SENT: 1 | STATUS: SECURE";
-        break;
-      case "clear":
-        setLogs([]);
-        setInput("");
-        return;
-      case "version":
-        response = "SECURE_OS v4.0.2 Stable Build 9928-ALPHA";
-        break;
-      case "lockdown":
-        response = "CRITICAL: LOCKDOWN PROTOCOL INITIATED. ALL PORTS CLOSED.";
-        if (onEmergency) onEmergency();
-        break;
-      default:
-        response = `ERR: Command '${cmd}' not found. Type HELP for manual.`;
+    const parts = input.trim().split(/\s+/);
+    const command = parts[0].toLowerCase();
+
+    if (command === "scan_url") {
+      const url = parts.slice(1).join(' ').trim();
+      if (!url) {
+        response = "ERR: Please provide a URL after SCAN_URL.";
+      } else {
+        try {
+          const res = await fetch('http://localhost:5000/scan-vulnerability', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ url }),
+          });
+          const data = await res.json();
+          if (res.ok) {
+            response = `SCAN RESULTS FOR ${data.url}:\n`;
+            response += `SEVERITY: ${data.severity}\n`;
+            if (data.ssl_info.valid) {
+              response += `SSL: VALID (Issuer: ${data.ssl_info.issuer.O || 'Unknown'}, Expiry: ${data.ssl_info.expiry})\n`;
+            } else {
+              response += `SSL: INVALID\n`;
+            }
+            if (data.ssl_info.issues.length > 0) {
+              response += `SSL ISSUES: ${data.ssl_info.issues.join(', ')}\n`;
+            }
+            response += `OPEN PORTS: ${data.open_ports.join(', ') || 'None'}\n`;
+            if (data.vulnerabilities.length > 0) {
+              response += `VULNERABILITIES: ${data.vulnerabilities.join('; ')}\n`;
+            } else {
+              response += `VULNERABILITIES: None detected\n`;
+            }
+            if (data.security_headers.missing_critical.length > 0) {
+              response += `MISSING SECURITY HEADERS: ${data.security_headers.missing_critical.join('; ')}\n`;
+            }
+          } else {
+            response = `ERR: ${data.error}`;
+          }
+        } catch (error) {
+          response = `ERR: Failed to connect to scan service: ${error instanceof Error ? error.message : String(error)}`;
+        }
+      }
+    } else {
+      switch (cmd) {
+        case "help":
+          response = "COMMANDS: SCAN, NET_STAT, CLEAR, VERSION, LOCKDOWN, REBOOT, SCAN_URL <url>";
+          break;
+        case "scan":
+          response = "Scanning ports 1-1024... 80/tcp OPEN, 443/tcp OPEN, 22/tcp CLOSED.";
+          break;
+        case "net_stat":
+          response = "ESTABLISHED: 14 | TIME_WAIT: 3 | SYN_SENT: 1 | STATUS: SECURE";
+          break;
+        case "clear":
+          setLogs([]);
+          setInput("");
+          return;
+        case "version":
+          response = "SECURE_OS v4.0.2 Stable Build 9928-ALPHA";
+          break;
+        case "lockdown":
+          response = "CRITICAL: LOCKDOWN PROTOCOL INITIATED. ALL PORTS CLOSED.";
+          if (onEmergency) onEmergency();
+          break;
+        default:
+          response = `ERR: Command '${cmd}' not found. Type HELP for manual.`;
+      }
     }
 
     setLogs(prev => [...prev, `root@secure-city:~$ ${input}`, `[${timestamp}] CMD_RESP: ${response}`]);
@@ -95,7 +141,7 @@ export default function TerminalLogs({ onEmergency }: { onEmergency?: () => void
       >
         <div className="flex flex-col gap-0.5">
           {logs.map((log, i) => (
-            <div key={i} className={log.includes("~$") ? "text-white font-bold" : log.includes("ERR:") ? "text-red-500" : log.includes("INFO:") ? "text-[var(--active-neon)]/80" : ""}>
+            <div key={i} className={log.includes("~$") ? "text-white font-bold" : log.includes("ERR:") ? "text-red-500" : log.includes("INFO:") ? "text-[var(--active-neon)]/80" : log.includes("SCAN RESULTS") ? "text-green-400 font-bold" : ""}>
               {log}
             </div>
           ))}
