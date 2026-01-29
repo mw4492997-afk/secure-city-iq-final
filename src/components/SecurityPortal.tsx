@@ -2,10 +2,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShieldCheck, Lock, Unlock, Fingerprint, Cpu } from "lucide-react";
+import { ShieldCheck, Lock, Unlock, Fingerprint, Cpu, Key, User } from "lucide-react";
 
 export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: () => void }) {
-  const [stage, setStage] = useState<"auth" | "scanning" | "decoding" | "granted">("auth");
+  const [stage, setStage] = useState<"login" | "auth" | "scanning" | "decoding" | "granted">("login");
+  const [username, setUsername] = useState("admin");
+  const [password, setPassword] = useState("12345");
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -48,11 +52,102 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
     }
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    // Simulate authentication delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    if (username === "admin" && password === "12345") {
+      setStage("auth");
+    } else {
+      setError("ACCESS DENIED: UNAUTHORIZED ENTRY");
+    }
+
+    setIsSubmitting(false);
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#000d0d] overflow-hidden">
       <div className="absolute inset-0 opacity-20 cyber-grid" />
       
       <AnimatePresence mode="wait">
+        {stage === "login" && (
+          <motion.div
+            key="login"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.1 }}
+            className="flex flex-col items-center gap-8 z-10 w-full max-w-sm"
+          >
+            <div className="text-center">
+              <h1 className="neon-text text-3xl font-black tracking-widest mb-2 uppercase">Security Access</h1>
+              <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
+                Enter Credentials
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="flex flex-col gap-6 w-full">
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-2">
+                  <User className="w-4 h-4 text-[var(--active-neon)]" />
+                  <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">User ID</label>
+                </div>
+                <input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full bg-zinc-900/50 border border-[var(--active-neon)]/30 rounded-lg px-4 py-3 text-[var(--active-neon)] font-mono text-sm focus:border-[var(--active-neon)] focus:outline-none transition-all"
+                  placeholder="Enter User ID"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="relative">
+                <div className="flex items-center gap-3 mb-2">
+                  <Key className="w-4 h-4 text-[var(--active-neon)]" />
+                  <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">Access Code</label>
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-zinc-900/50 border border-[var(--active-neon)]/30 rounded-lg px-4 py-3 text-[var(--active-neon)] font-mono text-sm focus:border-[var(--active-neon)] focus:outline-none transition-all"
+                  placeholder="Enter Access Code"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-red-500 font-mono text-xs text-center uppercase tracking-widest"
+                >
+                  {error}
+                </motion.div>
+              )}
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="glass-button w-full py-4 rounded-lg font-black uppercase tracking-[0.2em] text-[10px] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-[var(--active-neon)] border-t-transparent rounded-full animate-spin" />
+                    <span>Authenticating...</span>
+                  </div>
+                ) : (
+                  "Access System"
+                )}
+              </button>
+            </form>
+          </motion.div>
+        )}
+
         {stage === "auth" && (
           <motion.div
             key="auth"
