@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SECURE CITY IQ | DASHBOARD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --neon-cyan: #00f2ff;
+            --neon-pink: #bc13fe;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border-glow: rgba(0, 242, 255, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            height: 100vh;
+            background: #02050a;
+            font-family: 'Orbitron', sans-serif;
+            overflow-x: hidden;
+            perspective: 1000px;
+        }
+
+        /* Background layers */
+        .bg-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #002244 0%, #006666 50%, #000 100%);
+            z-index: -2;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            width: 200%; height: 200%;
+            background-image:
+                linear-gradient(var(--border-glow) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-glow) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: rotateX(60deg) translateY(-20%);
+            opacity: 0.15;
+            animation: grid-move 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes grid-move {
+            from { transform: rotateX(60deg) translateY(0); }
+            to { transform: rotateX(60deg) translateY(-50px); }
+        }
+
+        .blob {
+            position: absolute;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(188, 19, 254, 0.1) 0%, transparent 70%);
+            filter: blur(50px);
+            border-radius: 50%;
+            z-index: -1;
+            animation: blob-float 15s ease-in-out infinite;
+        }
+
+        @keyframes blob-float {
+            0%, 100% { transform: translate(-20%, -20%); }
+            50% { transform: translate(20%, 20%); }
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: var(--glass);
+            backdrop-filter: blur(25px);
+            border-bottom: 1px solid rgba(0, 242, 255, 0.3);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #00f3ff;
+            letter-spacing: 6px;
+            text-shadow: 0 0 8px #00f3ff;
+        }
+
+        .clock {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--neon-cyan);
+            font-size: 18px;
+            letter-spacing: 2px;
+        }
+
+        /* Main Container */
+        .container {
+            padding: 120px 2rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .dashboard-title {
+            text-align: center;
+            font-size: 32px;
+            font-weight: 900;
+            color: #00f3ff;
+            letter-spacing: 8px;
+            margin-bottom: 3rem;
+            text-shadow: 0 0 8px #00f3ff;
+        }
+
+        /* Quick Action Buttons */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 2rem;
+        }
+
+        .action-card {
+            background: var(--glass);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 24px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.4s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-card::before {
+            content: "";
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, var(--neon-cyan), transparent, var(--neon-pink));
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .action-card:hover {
+            transform: translateY(-10px) scale(1.05);
+            box-shadow: 0 0 50px rgba(0, 242, 255, 0.5);
+            border-color: var(--neon-cyan);
+        }
+
+        .action-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .action-label {
+            font-size: 18px;
+            font-weight: 700;
+            color: #00f3ff;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-shadow: 0 0 8px #00f3ff;
+        }
+
+        /* Phone Tracker Button Styles */
+        .phone-tracker-card {
+            border-color: #00f3ff !important; /* Neon cyan border */
+        }
+
+        .phone-tracker-card::before {
+            background: linear-gradient(45deg, #00f3ff, transparent, #bc13fe) !important; /* Neon cyan gradient */
+        }
+
+        .phone-tracker-card:hover {
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.5) !important; /* Neon cyan glow */
+            border-color: #00f3ff !important;
+        }
+
+        .phone-tracker-icon {
+            animation: phone-pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes phone-pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--glass);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 24px;
+            padding: 3rem;
+            text-align: center;
+            width: 90%;
+        }
+
+        .modal-content::before {
+            content: "";
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, var(--neon-cyan), transparent, var(--neon-pink));
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .scanning-text {
+            font-size: 24px;
+            color: var(--neon-cyan);
+            font-weight: 700;
+            letter-spacing: 4px;
+            animation: scanning 2s ease-in-out infinite;
+        }
+
+        @keyframes scanning {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 1rem; right: 1rem;
+            background: none;
+            border: none;
+            color: var(--neon-cyan);
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        /* Threat Map Styles */
+        .threat-map-modal {
+            max-width: 90%;
+            width: 90%;
+            height: 80%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .world-map {
+            flex: 2;
+            border-radius: 10px;
+            position: relative;
+            height: 400px;
+            overflow: hidden;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: none;
+            margin: 0;
+        }
+
+        .world-map::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0, 242, 255, 0.1) 2px,
+                rgba(0, 242, 255, 0.1) 4px
+            );
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .pulsing-marker {
+            animation: marker-pulse 2s infinite;
+        }
+
+        @keyframes marker-pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .live-feed {
+            flex: 1;
+            width: 100%;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            border-left: 2px solid #00f2ff;
+            box-shadow: 0 0 10px #00f2ff, inset 0 0 10px rgba(0, 242, 255, 0.1);
+            padding: 1rem;
+            overflow-y: auto;
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--neon-cyan);
+            font-size: 12px;
+        }
+
+        .live-feed h3 {
+            margin-bottom: 1rem;
+        }
+
+        /* Encryption Analysis Styles */
+        .encryption-modal {
+            max-width: 80%;
+            width: 80%;
+            height: 60%;
+        }
+
+        .terminal {
+            background: #000;
+            color: #00ff00;
+            font-family: 'Share Tech Mono', monospace;
+            padding: 1rem;
+            border-radius: 10px;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .scrolling-code {
+            height: calc(100% - 50px);
+            overflow: hidden;
+            white-space: pre;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        .progress-container {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            height: 20px;
+            background: #333;
+            border: 1px solid #00ff00;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #00ff00, #00f2ff);
+            width: 0%;
+            transition: width 0.1s;
+        }
+
+        .progress-text {
+            position: absolute;
+            bottom: 35px;
+            left: 10px;
+            color: #00ff00;
+            font-size: 16px;
+        }
+
+
+
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes laser-scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+
+        .laser-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00f3ff, transparent);
+            box-shadow: 0 0 10px #00f3ff;
+            animation: laser-scan 3s linear infinite;
+            z-index: 15;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-layer"></div>
+    <div class="grid-overlay"></div>
+    <div class="blob"></div>
+
+    <nav class="navbar">
+        <div class="logo">SECURE CITY IQ</div>
+        <div class="clock" id="digital-clock">00:00:00</div>
+    </nav>
+
+    <div class="container">
+        <h1 class="dashboard-title">DASHBOARD</h1>
+
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
+            <div class="action-card" onclick="openModal('THREAT MAP')">
+                <span class="action-icon">🌍</span>
+                <div class="action-label">THREAT MAP</div>
+            </div>
+            <div class="action-card" onclick="openModal('ADVANCED APPS')">
+                <span class="action-icon">📱</span>
+                <div class="action-label">ADVANCED APPS</div>
+            </div>
+            <div class="action-card" onclick="openModal('ENCRYPTION ANALYSIS')">
+                <span class="action-icon">🔒</span>
+                <div class="action-label">ENCRYPTION ANALYSIS</div>
+            </div>
+            <div class="action-card" onclick="openModal('SYSTEM SETTINGS')">
+                <span class="action-icon">⚙️</span>
+                <div class="action-label">SYSTEM SETTINGS</div>
+            </div>
+            <div class="action-card" onclick="openModal('DATA EXPORT')">
+                <span class="action-icon">📄</span>
+                <div class="action-label">DATA EXPORT</div>
+            </div>
+            <div class="action-card phone-tracker-card" onclick="openModal('TELECOM INTELLIGENCE')">
+                <span class="action-icon phone-tracker-icon"><i class="fas fa-phone-alt"></i></span>
+                <div class="action-label">SIGNAL INTERCEPTOR</div>
+            </div>
+            <div class="action-card" id="security-logs-btn" onclick="openModal('SECURITY LOGS')">
+                <i class="fas fa-shield" style="font-size: 2.5rem; color: #00f3ff; margin-bottom: 10px; display: block; filter: drop-shadow(0 0 5px #00f3ff);"></i>
+                <div class="action-label" style="color: var(--neon-cyan);">SECURITY LOGS</div>
+            </div>
+            <div class="action-card" onclick="openModal('CTF ANALYZER')">
+                <i class="fas fa-flag-checkered" style="font-size: 2.5rem; color: #00f3ff; margin-bottom: 10px; display: block; filter: drop-shadow(0 0 5px #00f3ff);"></i>
+                <div class="action-label" style="color: var(--neon-cyan);">CTF ANALYZER</div>
+            </div>
+        </div>
+
+        <!-- Authorized Personnel Only Text -->
+        <div style="position: absolute; bottom: 20px; right: 20px; color: #00f3ff; font-family: 'Orbitron', sans-serif; font-size: 14px; text-shadow: 0 0 8px #00f3ff; letter-spacing: 1px;">
+            AUTHORIZED PERSONNEL ONLY. ALL ATTEMPTS LOGGED.
+        </div>
+    </div>
+
+    <div class="modal" id="glass-modal">
+        <div class="modal-content" id="modal-content">
+            <button class="close-btn" onclick="closeModal()">×</button>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        // Digital Clock
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('digital-clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Modal Functions
+        function openModal(action) {
+            const modalContent = document.getElementById('modal-content');
+            const modalBody = document.getElementById('modal-body');
+            modalContent.className = 'modal-content'; // Reset classes
+
+            if (action === 'THREAT MAP') {
+                modalContent.classList.add('threat-map-modal');
+                modalBody.innerHTML = `
+                    <div class="world-map" id="map"></div>
+                    <div class="live-feed">
+                        <h3>LIVE FEED</h3>
+                        <div id="feed-content"></div>
+                    </div>
+                `;
+                playBeep();
+                initThreatMap();
+                startLiveFeed();
+            } else if (action === 'ENCRYPTION ANALYSIS') {
+                modalContent.classList.add('encryption-modal');
+                modalBody.innerHTML = `
+                    <div class="terminal">
+                        <div class="scrolling-code" id="scrolling-code"></div>
+                        <div class="progress-text">[DECRYPTING CORE DATA...]</div>
+                        <div class="progress-container">
+                            <div class="progress-bar" id="progress-bar"></div>
+                        </div>
+                    </div>
+                `;
+                startEncryptionAnimation();
+            } else if (action === 'TELECOM INTELLIGENCE') {
+                modalContent.classList.add('threat-map-modal');
+                modalBody.innerHTML = `
+                    <div class="world-map" id="phone-map"></div>
+                    <div class="live-feed">
+                        <h3>TARGET PROFILE</h3>
+                        <input type="text" id="phone-number" placeholder="Enter phone number (e.g., +964123456789)" style="width: 100%; padding: 0.5rem; margin-bottom: 1rem; background: rgba(0,0,0,0.5); color: #00f2ff; border: 1px solid #00f2ff; border-radius: 5px; font-family: 'Share Tech Mono', monospace;">
+                        <div id="target-status">Status: [READY]</div>
+                    </div>
+                `;
+                playTypingSound();
+                initPhoneTrackerMap();
+            } else if (action === 'ADVANCED APPS') {
+                modalBody.innerHTML = `
+                    <h2 style="color: #00f3ff; text-shadow: 0 0 8px #00f3ff;">System Vulnerabilities</h2>
+                    <p style="color: #00f3ff;">No tracking data available.</p>
+                `;
+            } else if (action === 'DATA EXPORT') {
+                modalBody.innerHTML = `
+                    <h2 style="color: #00f3ff; text-shadow: 0 0 8px #00f3ff;">Data Export</h2>
+                    <p style="color: #00f3ff;">Download summary of captured IP and Location data.</p>
+                    <button onclick="downloadData()" style="background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-family: 'Orbitron', sans-serif;">Download Summary</button>
+                `;
+            } else if (action === 'SYSTEM SETTINGS') {
+                modalBody.innerHTML = `
+                    <div class="terminal">
+                        <h2 style="color: #00f3ff; text-shadow: 0 0 8px #00f3ff;">System Settings</h2>
+                        <label for="sensitivity" style="color: #00f3ff;">Tracking Sensitivity: <span id="sensitivity-value">5</span></label>
+                        <input type="range" id="sensitivity" min="1" max="10" value="5" style="width: 100%; margin: 1rem 0;">
+                        <button onclick="saveSettings()" style="background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-family: 'Orbitron', sans-serif;">Save Settings</button>
+                    </div>
+                `;
+                setTimeout(() => {
+                    document.getElementById('sensitivity').addEventListener('input', function() {
+                        document.getElementById('sensitivity-value').textContent = this.value;
+                    });
+                }, 100);
+            } else if (action === 'SECURITY LOGS') {
+                modalBody.innerHTML = `
+                    <div class="live-feed">
+                        <h3 style="color: #00f3ff;">SECURITY LOGS</h3>
+                        <div id="security-log" style="height: 300px; overflow-y: auto; font-family: 'Share Tech Mono', monospace; color: var(--neon-cyan);"></div>
+                    </div>
+                `;
+                startSecurityLog();
+            } else if (action === 'CTF ANALYZER') {
+                modalBody.innerHTML = `
+                    <h2 style="color: #00f3ff; text-shadow: 0 0 8px #00f3ff;">CTF ANALYZER</h2>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 2rem;">
+                        <input type="file" id="image-input" accept="image/*" style="display: none;">
+                        <button onclick="document.getElementById('image-input').click()" style="background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-family: 'Orbitron', sans-serif;">Image Scan</button>
+                        <input type="url" id="url-input" placeholder="Enter URL for web scan" style="flex: 1; padding: 0.5rem; background: rgba(0,0,0,0.5); color: #00f2ff; border: 1px solid #00f2ff; border-radius: 5px; font-family: 'Share Tech Mono', monospace;">
+                        <button onclick="performWebScan()" style="background: var(--glass); backdrop-filter: blur(25px); border: 1px solid var(--neon-cyan); color: var(--neon-cyan); padding: 0.5rem 1rem; border-radius: 5px; cursor: pointer; font-family: 'Orbitron', sans-serif;">Web Scan</button>
+                    </div>
+                    <div class="progress-container" id="ctf-progress-container" style="display: none;">
+                        <div class="progress-bar" id="ctf-progress-bar"></div>
+                    </div>
+                    <div class="scanning-text" id="ctf-scanning-text" style="display: none;">System Scanning...</div>
+                    <div id="ctf-results" style="color: var(--neon-cyan); font-family: 'Share Tech Mono', monospace; margin-top: 1rem;"></div>
+                `;
+                document.getElementById('image-input').addEventListener('change', handleImageUpload);
+            } else {
+                modalBody.innerHTML = `<div class="scanning-text">SCANNING... ${action}</div>`;
+            }
+
+            document.getElementById('glass-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('glass-modal').style.display = 'none';
+            // Clear intervals if any
+            if (window.liveFeedInterval) clearInterval(window.liveFeedInterval);
+            if (window.encryptionInterval) clearInterval(window.encryptionInterval);
+            if (window.attackLogInterval) clearInterval(window.attackLogInterval);
+            if (window.securityLogInterval) clearInterval(window.securityLogInterval);
+        }
+
+        // Live Feed for Threat Map
+        function startLiveFeed() {
+            const feedContent = document.getElementById('feed-content');
+            const logs = [
+                '[WARN] Unauthorized access from IP: 192.168.1.100',
+                '[ALERT] Suspicious activity detected in sector 7',
+                '[INFO] Firewall breach attempt blocked',
+                '[WARN] Unauthorized access from IP: 10.0.0.50',
+                '[ALERT] Malware signature detected',
+                '[INFO] Intrusion prevention system activated'
+            ];
+            let index = 0;
+            window.liveFeedInterval = setInterval(() => {
+                const log = logs[index % logs.length];
+                const time = new Date().toLocaleTimeString();
+                feedContent.innerHTML += `[${time}] ${log}\n`;
+                feedContent.scrollTop = feedContent.scrollHeight;
+                index++;
+            }, 3000);
+        }
+
+        // Encryption Animation
+        function startEncryptionAnimation() {
+            const scrollingCode = document.getElementById('scrolling-code');
+            const progressBar = document.getElementById('progress-bar');
+            const matrixChars = '01ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz!@#$%^&*()';
+            let code = '';
+            let progress = 0;
+
+            window.encryptionInterval = setInterval(() => {
+                // Add new line of code
+                let line = '';
+                for (let i = 0; i < 80; i++) {
+                    line += matrixChars[Math.floor(Math.random() * matrixChars.length)];
+                }
+                code += line + '\n';
+                scrollingCode.textContent = code;
+                scrollingCode.scrollTop = scrollingCode.scrollHeight;
+
+                // Update progress
+                progress += 1;
+                if (progress > 100) progress = 100;
+                progressBar.style.width = progress + '%';
+
+                if (progress >= 100) {
+                    clearInterval(window.encryptionInterval);
+                }
+            }, 100);
+        }
+
+        // Audio Functions
+        function playBeep() {
+            const audio = new Audio('https://www.soundjay.com/buttons/beep-01a.mp3');
+            audio.play();
+        }
+
+        function playTypingSound() {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+            oscillator.type = 'square';
+
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.05);
+        }
+
+        // Initialize Threat Map
+        function initThreatMap() {
+            const map = L.map('map').setView([20, 0], 2); // Centered on world
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: 'Tiles &copy; CartoDB',
+                maxZoom: 19
+            }).addTo(map);
+
+            // Add pulsing red circles at real world coordinates
+            const cities = [
+                { name: 'London', lat: 51.5074, lng: -0.1278 },
+                { name: 'Dubai', lat: 25.2048, lng: 55.2708 },
+                { name: 'New York', lat: 40.7128, lng: -74.0060 },
+                { name: 'Tokyo', lat: 35.6762, lng: 139.6503 },
+                { name: 'Sydney', lat: -33.8688, lng: 151.2093 }
+            ];
+
+            cities.forEach(city => {
+                L.circle([city.lat, city.lng], {
+                    color: 'red',
+                    fillColor: 'red',
+                    fillOpacity: 0.8,
+                    radius: 100000, // 100km radius for larger dots
+                    className: 'pulsing-marker'
+                }).addTo(map);
+            });
+        }
+
+        // Initialize Phone Tracker Map
+        function initPhoneTrackerMap() {
+            const map = L.map('phone-map').setView([20, 0], 2); // Centered on world
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: 'Tiles &copy; CartoDB',
+                maxZoom: 19
+            }).addTo(map);
+
+            const phoneInput = document.getElementById('phone-number');
+            const statusDiv = document.getElementById('target-status');
+
+            phoneInput.addEventListener('input', function() {
+                const phoneNumber = phoneInput.value.trim();
+                if (phoneNumber.startsWith('+964')) {
+                    statusDiv.textContent = 'Status: [INTERCEPTING...]';
+                    map.flyTo([33.3152, 44.3661], 6); // Iraq coordinates with zoom 6
+                    setTimeout(() => {
+                        statusDiv.textContent = 'Status: [LOCATED]';
+                    }, 2000);
+                } else {
+                    statusDiv.textContent = 'Status: [READY]';
+                }
+            });
+        }
+
+
+
+        // Download Data Function
+        function downloadData() {
+            const data = `Captured Data Summary\n\nIP Address: ${userIP}\nLocation: ${userLocation}\nDevice: ${userDevice}\nTimestamp: ${new Date().toISOString()}`;
+            const blob = new Blob([data], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'security_data_summary.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Save Settings Function
+        function saveSettings() {
+            const sensitivity = document.getElementById('sensitivity').value;
+            alert(`Settings saved! Tracking sensitivity set to ${sensitivity}.`);
+        }
+
+        // Start Attack Log Function
+        function startAttackLog() {
+            const attackLog = document.getElementById('attack-log');
+            const logs = [
+                '[ALERT] Intrusion attempt detected from unknown IP',
+                '[WARN] Suspicious login from external network',
+                '[INFO] Firewall blocked unauthorized access',
+                '[ALERT] Malware signature detected in traffic',
+                '[WARN] Unusual data transfer volume',
+                '[INFO] Security scan completed successfully'
+            ];
+            let index = 0;
+            window.attackLogInterval = setInterval(() => {
+                const log = logs[index % logs.length];
+                const time = new Date().toLocaleTimeString();
+                attackLog.innerHTML += `[${time}] ${log}\n`;
+                attackLog.scrollTop = attackLog.scrollHeight;
+                index++;
+            }, 2500);
+        }
+
+        // Start Security Log Function
+        function startSecurityLog() {
+            const securityLog = document.getElementById('security-log');
+            const logs = [
+                '[INFO] System boot completed successfully',
+                '[INFO] User authentication successful',
+                '[WARN] Failed login attempt from IP: 192.168.1.101',
+                '[INFO] Database backup completed',
+                '[WARN] High CPU usage detected',
+                '[INFO] Security patch applied',
+                '[INFO] Firewall rules updated',
+                '[WARN] Unusual network traffic pattern'
+            ];
+            let index = 0;
+            window.securityLogInterval = setInterval(() => {
+                const log = logs[index % logs.length];
+                const time = new Date().toLocaleTimeString();
+                securityLog.innerHTML += `[${time}] ${log}\n`;
+                securityLog.scrollTop = securityLog.scrollHeight;
+                index++;
+            }, 3000);
+        }
+
+        // CTF Analyzer Functions
+        async function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const resultsDiv = document.getElementById('ctf-results');
+            const progressContainer = document.getElementById('ctf-progress-container');
+            const progressBar = document.getElementById('ctf-progress-bar');
+            const scanningText = document.getElementById('ctf-scanning-text');
+
+            resultsDiv.innerHTML = '';
+            progressContainer.style.display = 'block';
+            scanningText.style.display = 'block';
+            progressBar.style.width = '0%';
+
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 10;
+                progressBar.style.width = progress + '%';
+                if (progress >= 100) clearInterval(progressInterval);
+            }, 200);
+
+            try {
+                const exifData = await extractEXIF(file);
+                const hiddenStrings = await extractHiddenStrings(file);
+
+                resultsDiv.innerHTML = `
+                    <h3>Image Scan Results:</h3>
+                    <p><strong>EXIF Data:</strong> ${exifData || 'No EXIF data found'}</p>
+                    <p><strong>Hidden Strings:</strong> ${hiddenStrings || 'No hidden strings found'}</p>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error scanning image: ${error.message}</p>`;
+            } finally {
+                progressContainer.style.display = 'none';
+                scanningText.style.display = 'none';
+            }
+        }
+
+        async function extractEXIF(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Simple EXIF extraction (in a real implementation, use a library like exif-js)
+                    const arrayBuffer = e.target.result;
+                    const dataView = new DataView(arrayBuffer);
+                    let exifData = '';
+
+                    // Check for EXIF marker
+                    if (dataView.getUint16(0) === 0xFFD8) {
+                        let offset = 2;
+                        while (offset < dataView.byteLength) {
+                            if (dataView.getUint16(offset) === 0xFFE1) {
+                                const exifLength = dataView.getUint16(offset + 2);
+                                exifData = `EXIF data found (${exifLength} bytes)`;
+                                break;
+                            }
+                            offset += 2;
+                        }
+                    }
+
+                    resolve(exifData || 'No EXIF data detected');
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        async function extractHiddenStrings(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const arrayBuffer = e.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    let strings = '';
+
+                    // Look for printable ASCII strings longer than 4 characters
+                    let currentString = '';
+                    for (let i = 0; i < uint8Array.length; i++) {
+                        const char = String.fromCharCode(uint8Array[i]);
+                        if (char >= ' ' && char <= '~') {
+                            currentString += char;
+                        } else {
+                            if (currentString.length > 4) {
+                                strings += currentString + ' ';
+                            }
+                            currentString = '';
+                        }
+                    }
+
+                    resolve(strings.trim() || 'No hidden strings detected');
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        async function performWebScan() {
+            const urlInput = document.getElementById('url-input');
+            const url = urlInput.value.trim();
+            if (!url) {
+                alert('Please enter a URL');
+                return;
+            }
+
+            const resultsDiv = document.getElementById('ctf-results');
+            const progressContainer = document.getElementById('ctf-progress-container');
+            const progressBar = document.getElementById('ctf-progress-bar');
+            const scanningText = document.getElementById('ctf-scanning-text');
+
+            resultsDiv.innerHTML = '';
+            progressContainer.style.display = 'block';
+            scanningText.style.display = 'block';
+            progressBar.style.width = '0%';
+
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += 10;
+                progressBar.style.width = progress + '%';
+                if (progress >= 100) clearInterval(progressInterval);
+            }, 200);
+
+            try {
+                const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+                const htmlContent = data.contents;
+
+                const flags = findFlags(htmlContent);
+                const comments = findComments(htmlContent);
+
+                resultsDiv.innerHTML = `
+                    <h3>Web Scan Results for ${url}:</h3>
+                    <p><strong>Flags Found:</strong> ${flags.join(', ') || 'None'}</p>
+                    <p><strong>Comments:</strong> ${comments.join('; ') || 'None'}</p>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `<p>Error scanning website: ${error.message}</p>`;
+            } finally {
+                progressContainer.style.display = 'none';
+                scanningText.style.display = 'none';
+            }
+        }
+
+        function findFlags(content) {
+            const flagPatterns = [
+                /flag\{[^}]+\}/gi,
+                /CTF\{[^}]+\}/gi,
+                /[a-zA-Z0-9]{32}/g, // MD5-like hashes
+                /[a-zA-Z0-9]{40}/g, // SHA1-like hashes
+            ];
+
+            const flags = [];
+            flagPatterns.forEach(pattern => {
+                const matches = content.match(pattern);
+                if (matches) flags.push(...matches);
+            });
+
+            return [...new Set(flags)]; // Remove duplicates
+        }
+
+        function findComments(content) {
+            const commentPatterns = [
+                /<!--[\s\S]*?-->/g, // HTML comments
+                /\/\*[\s\S]*?\*\//g, // CSS/JS block comments
+                /\/\/.*$/gm, // JS line comments
+            ];
+
+            const comments = [];
+            commentPatterns.forEach(pattern => {
+                const matches = content.match(pattern);
+                if (matches) {
+                    comments.push(...matches.map(comment => comment.replace(/\s+/g, ' ').trim()));
+                }
+            });
+
+            return comments.slice(0, 10); // Limit to first 10 comments
+        }
+
+
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('glass-modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</body>
+</html>
