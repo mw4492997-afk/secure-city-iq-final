@@ -58,7 +58,7 @@ export default function TerminalLogs({ onEmergency }: { onEmergency?: () => void
         response = "ERR: Please provide a URL after SCAN_URL.";
       } else {
         try {
-          const res = await fetch('http://localhost:5000/scan-vulnerability', {
+          const res = await fetch('/api/scan-vulnerability', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
