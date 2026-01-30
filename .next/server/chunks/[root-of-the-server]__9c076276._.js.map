@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 3, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
-    {"offset": {"line": 55, "column": 0}, "map": {"version":3,"sources":["file:///C:/Users/MSI/Desktop/hhhh/src/app/api/scan-vulnerability/route.ts"],"sourcesContent":["import { NextRequest, NextResponse } from 'next/server';\r\nimport { scanUrl } from '@lib/vulnerability-scanner';\r\n\r\nexport async function POST(request: NextRequest) {\r\n  try {\r\n    const { url } = await request.json();\r\n\r\n    if (!url) {\r\n      return NextResponse.json({ error: 'يجب إدخال رابط صحيح' }, { status: 400 });\r\n    }\r\n\r\n    const results = await scanUrl(url);\r\n    return NextResponse.json(results);\r\n  } catch (error) {\r\n    console.error('Scan error:', error);\r\n    return NextResponse.json({ error: 'خطأ في الفحص' }, { status: 500 });\r\n  }\r\n}\r\n"],"names":[],"mappings":";;;;AAAA;;;;;;;;AAGO,eAAe,KAAK,OAAoB;IAC7C,IAAI;QACF,MAAM,EAAE,GAAG,EAAE,GAAG,MAAM,QAAQ,IAAI;QAElC,IAAI,CAAC,KAAK;YACR,OAAO,mKAAY,CAAC,IAAI,CAAC;gBAAE,OAAO;YAAsB,GAAG;gBAAE,QAAQ;YAAI;QAC3E;QAEA,MAAM,UAAU,MAAM,QAAQ;QAC9B,OAAO,mKAAY,CAAC,IAAI,CAAC;IAC3B,EAAE,OAAO,OAAO;QACd,QAAQ,KAAK,CAAC,eAAe;QAC7B,OAAO,mKAAY,CAAC,IAAI,CAAC;YAAE,OAAO;QAAe,GAAG;YAAE,QAAQ;QAAI;IACpE;AACF","debugId":null}}]
-}

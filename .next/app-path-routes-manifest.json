@@ -1,0 +1,5 @@
+{
+  "/api/scan-vulnerability/route": "/api/scan-vulnerability",
+  "/_not-found/page": "/_not-found",
+  "/page": "/"
+}

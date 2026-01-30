@@ -1,3 +1,5 @@
 {
-  "/api/scan-vulnerability/route": "app/api/scan-vulnerability/route.js"
+  "/api/scan-vulnerability/route": "app/api/scan-vulnerability/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/page": "app/page.js"
 }
