@@ -9,7 +9,7 @@ import TerminalLogs from "@/components/TerminalLogs";
 import Navbar from "@/components/Navbar";
 import SecurityCharts from "@/components/SecurityCharts";
 import ThreatMap from "@/components/ThreatMap";
-import SecurityPortal from "@/components/SecurityPortal";
+
 import SecurityLedger from "@/components/SecurityLedger";
 import { Toaster, toast } from "sonner";
 import { ShieldAlert, Globe, Server, Cpu, Activity, Zap, FileText } from "lucide-react";
@@ -18,7 +18,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 export default function Home() {
   const [emergency, setEmergency] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
 
   useEffect(() => {
@@ -39,10 +38,6 @@ export default function Home() {
       });
     }
   };
-
-  if (!isAuthenticated) {
-    return <SecurityPortal onAccessGranted={() => setIsAuthenticated(true)} />;
-  }
 
   return (
     <div className="relative flex min-h-screen flex-col items-center bg-[var(--cyber-bg)] font-sans text-zinc-100 overflow-x-hidden transition-colors duration-500">
@@ -143,10 +138,10 @@ export default function Home() {
 
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 w-full mb-12">
-          <StatBox icon={<Globe className="w-4 h-4" />} label="Network Load" value="42%" trend="+2.4%" />
-          <StatBox icon={<ShieldAlert className="w-4 h-4" />} label="Active Threats" value="03" trend="Stable" />
-          <StatBox icon={<Server className="w-4 h-4" />} label="Nodes Active" value="1,248" trend="100%" />
-          <StatBox icon={<Cpu className="w-4 h-4" />} label="Core Temp" value="38°C" trend="-1.2%" />
+          <StatBox icon={<Globe className="w-4 h-4" />} label="Network Load" value="65%" trend="+5.7%" />
+          <StatBox icon={<ShieldAlert className="w-4 h-4" />} label="Active Threats" value="01" trend="Stable" />
+          <StatBox icon={<Server className="w-4 h-4" />} label="Nodes Active" value="2,156" trend="100%" />
+          <StatBox icon={<Cpu className="w-4 h-4" />} label="Core Temp" value="35°C" trend="-2.8%" />
         </div>
 
         {/* Action Grid */}
