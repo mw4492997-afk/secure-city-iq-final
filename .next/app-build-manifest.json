@@ -1,17 +1,3 @@
 {
-  "pages": {
-    "/page": [
-      "static/chunks/f8b36_next_dist_bb002568._.js",
-      "static/chunks/Desktop_hhhh_src_app_layout_tsx_2c93b0e0._.js",
-      "static/chunks/[turbopack]_browser_dev_hmr-client_hmr-client_ts_4e932b01._.js",
-      "static/chunks/f8b36_next_dist_compiled_react-dom_fecea39c._.js",
-      "static/chunks/f8b36_next_dist_compiled_next-devtools_index_f520ff11.js",
-      "static/chunks/f8b36_next_dist_compiled_76f11405._.js",
-      "static/chunks/f8b36_next_dist_client_104c6afa._.js",
-      "static/chunks/f8b36_next_dist_277697a5._.js",
-      "static/chunks/e7c2c_@swc_helpers_cjs_10687ae1._.js",
-      "static/chunks/Desktop_hhhh_a0ff3932._.js",
-      "static/chunks/turbopack-Desktop_hhhh_f0ca51bc._.js"
-    ]
-  }
+  "pages": {}
 }
