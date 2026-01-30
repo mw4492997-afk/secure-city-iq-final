@@ -12,12 +12,14 @@ import ThreatMap from "@/components/ThreatMap";
 import SecurityPortal from "@/components/SecurityPortal";
 import SecurityLedger from "@/components/SecurityLedger";
 import { Toaster, toast } from "sonner";
-import { ShieldAlert, Globe, Server, Cpu, Activity, Zap } from "lucide-react";
+import { ShieldAlert, Globe, Server, Cpu, Activity, Zap, FileText } from "lucide-react";
 import { motion } from "framer-motion";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function Home() {
   const [emergency, setEmergency] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-emergency", emergency.toString());
@@ -77,16 +79,41 @@ export default function Home() {
               <button
                 onClick={toggleEmergency}
                 className={`px-8 py-4 rounded-xl font-black uppercase tracking-[0.2em] text-[10px] transition-all duration-500 border-2 shadow-2xl ${
-                  emergency 
-                    ? "bg-red-600/20 border-red-500 text-red-500 shadow-red-500/20 emergency-pulse" 
+                  emergency
+                    ? "bg-red-600/20 border-red-500 text-red-500 shadow-red-500/20 emergency-pulse"
                     : "glass-button border-[var(--active-neon)]/30 text-[var(--active-neon)] hover:border-[var(--active-neon)]"
                 }`}
               >
                 {emergency ? "Abort Emergency" : "Activate Lockdown"}
               </button>
-              <button className="px-8 py-4 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white/10 transition-all">
-                System Reports
-              </button>
+              <Dialog>
+                <DialogTrigger asChild>
+                  <button className="px-8 py-4 bg-white/5 border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-white/10 transition-all">
+                    System Reports
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="max-w-4xl max-h-[80vh] bg-[var(--cyber-bg)] border-[var(--active-neon)]/30">
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-3 text-[var(--active-neon)]">
+                      <FileText className="w-5 h-5" />
+                      System Console Logs Summary
+                    </DialogTitle>
+                  </DialogHeader>
+                  <div className="mt-4">
+                    <div className="bg-black/50 rounded-lg p-4 font-mono text-[10px] text-[var(--active-neon)] max-h-96 overflow-y-auto custom-scrollbar">
+                      {consoleLogs.length > 0 ? (
+                        consoleLogs.slice(-20).map((log, i) => (
+                          <div key={i} className={`mb-1 ${log.includes("ERR:") ? "text-red-500" : log.includes("INFO:") ? "text-[var(--active-neon)]/80" : ""}`}>
+                            {log}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-zinc-500">No logs available yet...</div>
+                      )}
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </motion.div>
 
@@ -157,7 +184,7 @@ export default function Home() {
         </div>
       </main>
 
-      <TerminalLogs onEmergency={toggleEmergency} />
+      <TerminalLogs onEmergency={toggleEmergency} onLogsUpdate={setConsoleLogs} />
 
       {/* Decorative corner accents */}
       <div className="fixed top-0 left-0 w-48 h-48 border-t-2 border-l-2 border-[var(--active-neon)]/20 m-6 rounded-tl-[3rem] pointer-events-none transition-colors duration-500" />

@@ -20,7 +20,7 @@ const PROCESSES = [
   "BUFFER OVERFLOW PROTECTION: ENABLED"
 ];
 
-export default function TerminalLogs({ onEmergency }: { onEmergency?: () => void }) {
+export default function TerminalLogs({ onEmergency, onLogsUpdate }: { onEmergency?: () => void; onLogsUpdate?: (logs: string[]) => void }) {
   const [logs, setLogs] = useState<string[]>([]);
   const [input, setInput] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -40,6 +40,12 @@ export default function TerminalLogs({ onEmergency }: { onEmergency?: () => void
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
   }, [logs]);
+
+  useEffect(() => {
+    if (onLogsUpdate) {
+      onLogsUpdate(logs);
+    }
+  }, [logs, onLogsUpdate]);
 
   const handleCommand = async (e: React.FormEvent) => {
     e.preventDefault();

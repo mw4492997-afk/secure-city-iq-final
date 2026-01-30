@@ -16,8 +16,8 @@ export default function Navbar() {
 
       <div className="hidden md:flex items-center gap-8">
         <NavLink icon={<Activity className="w-4 h-4" />} label="Dashboard" active />
-        <NavLink icon={<Share2 className="w-4 h-4" />} label="Topology" />
-        <NavLink icon={<Lock className="w-4 h-4" />} label="Security" />
+        <NavLink icon={<Share2 className="w-4 h-4" />} label="Topology" href="/topology" />
+        <NavLink icon={<Lock className="w-4 h-4" />} label="Security" href="/security" />
         <NavLink icon={<Settings className="w-4 h-4" />} label="Settings" />
       </div>
 
@@ -34,10 +34,10 @@ export default function Navbar() {
   );
 }
 
-function NavLink({ icon, label, active = false }: { icon: React.ReactNode; label: string; active?: boolean }) {
+function NavLink({ icon, label, active = false, href = "#" }: { icon: React.ReactNode; label: string; active?: boolean; href?: string }) {
   return (
-    <Link 
-      href="#" 
+    <Link
+      href={href}
       className={`flex items-center gap-2 text-xs font-bold uppercase tracking-widest transition-all duration-300 hover:text-[var(--active-neon)] ${
         active ? "text-[var(--active-neon)]" : "text-zinc-400"
       }`}
