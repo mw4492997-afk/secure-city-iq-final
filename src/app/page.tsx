@@ -9,7 +9,7 @@ import TerminalLogs from "@/components/TerminalLogs";
 import Navbar from "@/components/Navbar";
 import SecurityCharts from "@/components/SecurityCharts";
 import ThreatMap from "@/components/ThreatMap";
-
+import SecurityPortal from "@/components/SecurityPortal";
 import SecurityLedger from "@/components/SecurityLedger";
 import { Toaster, toast } from "sonner";
 import { ShieldAlert, Globe, Server, Cpu, Activity, Zap } from "lucide-react";
@@ -17,6 +17,7 @@ import { motion } from "framer-motion";
 
 export default function Home() {
   const [emergency, setEmergency] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-emergency", emergency.toString());
@@ -36,6 +37,10 @@ export default function Home() {
       });
     }
   };
+
+  if (!isAuthenticated) {
+    return <SecurityPortal onAccessGranted={() => setIsAuthenticated(true)} />;
+  }
 
   return (
     <div className="relative flex min-h-screen flex-col items-center bg-[var(--cyber-bg)] font-sans text-zinc-100 overflow-x-hidden transition-colors duration-500">
