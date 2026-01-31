@@ -1,10 +1,5 @@
-# Task: Remove static export settings from Next.js config and dynamic export from API route
+# Task: Update package.json to disable Turbopack and ensure next.config.ts has no static export settings
 
-## Completed Steps
-- [x] Remove `output: 'export'` from `next.config.ts`
-- [x] Remove `outputFileTracingRoot: path.resolve(__dirname, '../../')` from `next.config.ts`
-- [x] Remove `export const dynamic = 'force-dynamic';` from `src/app/api/security-reports/route.ts`
-
-## Followup Steps
-- [ ] Verify the changes work for standard Next.js deployment on Netlify
-- [ ] Test API routes to ensure they function correctly
+## Steps to Complete
+- [ ] Update package.json: Change "build": "next build" to "build": "next build --no-turbo"
+- [ ] Verify next.config.ts has no static export settings (already confirmed no changes needed)
