@@ -9,6 +9,7 @@ import TerminalLogs from "@/components/TerminalLogs";
 import Navbar from "@/components/Navbar";
 import SecurityCharts from "@/components/SecurityCharts";
 import ThreatMap from "@/components/ThreatMap";
+import SecurityPortal from "@/components/SecurityPortal";
 
 import SecurityLedger from "@/components/SecurityLedger";
 import { Toaster, toast } from "sonner";
@@ -19,10 +20,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 export default function Home() {
   const [emergency, setEmergency] = useState(false);
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-emergency", emergency.toString());
   }, [emergency]);
+
+  useEffect(() => {
+    const authStatus = localStorage.getItem("authenticated");
+    if (authStatus === "true") {
+      setIsAuthenticated(true);
+    }
+  }, []);
 
   const toggleEmergency = () => {
     const newState = !emergency;
@@ -38,6 +47,15 @@ export default function Home() {
       });
     }
   };
+
+  const handleAccessGranted = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem("authenticated", "true");
+  };
+
+  if (!isAuthenticated) {
+    return <SecurityPortal onAccessGranted={handleAccessGranted} />;
+  }
 
   return (
     <div className="relative flex min-h-screen flex-col items-center bg-[var(--cyber-bg)] font-sans text-zinc-100 overflow-x-hidden transition-colors duration-500">

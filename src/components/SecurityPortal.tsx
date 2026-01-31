@@ -96,7 +96,7 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
                   <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">User ID</label>
                 </div>
                 <input
-                  type="password"
+                  type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-zinc-900/50 border border-[var(--active-neon)]/30 rounded-lg px-4 py-3 text-[var(--active-neon)] font-mono text-sm focus:border-[var(--active-neon)] focus:outline-none transition-all"
