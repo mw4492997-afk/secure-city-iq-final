@@ -1,12 +1,13 @@
+import bcrypt
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 from vulnerability_scanner import VulnerabilityScanner
 
 app = Flask(__name__)
 app.secret_key = 'secure_city_iq_secret_key'
 
-# بيانات الدخول التي طلبتها
+# بيانات الدخول التي طلبتها مع تشفير Bcrypt
 ADMIN_USER = "admin"
-ADMIN_PASS = "1234"
+ADMIN_PASS_HASH = bcrypt.hashpw("12345".encode('utf-8'), bcrypt.gensalt())
 
 scanner = VulnerabilityScanner()
 
@@ -21,7 +22,7 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if username == ADMIN_USER and password == ADMIN_PASS:
+        if username == ADMIN_USER and bcrypt.checkpw(password.encode('utf-8'), ADMIN_PASS_HASH):
             session['logged_in'] = True
             return redirect(url_for('demo'))
         else:

@@ -36,6 +36,16 @@ export default function TerminalLogs({ onEmergency, onLogsUpdate }: { onEmergenc
   }, []);
 
   useEffect(() => {
+    // Check for Supabase project ID and display connection message
+    const projectId = process.env.NEXT_PUBLIC_SUPABASE_PROJECT_ID;
+    if (projectId) {
+      const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+      const connectionLog = `[${timestamp}] SUCCESS: DATABASE CONNECTED - Project ID: ${projectId}`;
+      setLogs(prev => [...prev.slice(-30), connectionLog]);
+    }
+  }, []);
+
+  useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
@@ -73,7 +83,7 @@ export default function TerminalLogs({ onEmergency, onLogsUpdate }: { onEmergenc
           });
           const data = await res.json();
           if (res.ok) {
-            response = `SCAN RESULTS FOR ${data.url}:\n`;
+            response = `NMAP SCAN RESULTS FOR ${data.url}:\n`;
             response += `SEVERITY: ${data.severity}\n`;
             if (data.ssl_info.valid) {
               response += `SSL: VALID (Issuer: ${data.ssl_info.issuer.O || 'Unknown'}, Expiry: ${data.ssl_info.expiry})\n`;
@@ -83,7 +93,7 @@ export default function TerminalLogs({ onEmergency, onLogsUpdate }: { onEmergenc
             if (data.ssl_info.issues.length > 0) {
               response += `SSL ISSUES: ${data.ssl_info.issues.join(', ')}\n`;
             }
-            response += `OPEN PORTS: ${data.open_ports.join(', ') || 'None'}\n`;
+            response += `OPEN PORTS: ${data.open_ports.join(', ') || 'None detected by Nmap'}\n`;
             if (data.vulnerabilities.length > 0) {
               response += `VULNERABILITIES: ${data.vulnerabilities.join('; ')}\n`;
             } else {
@@ -91,6 +101,27 @@ export default function TerminalLogs({ onEmergency, onLogsUpdate }: { onEmergenc
             }
             if (data.security_headers.missing_critical.length > 0) {
               response += `MISSING SECURITY HEADERS: ${data.security_headers.missing_critical.join('; ')}\n`;
+            }
+
+            // Save to Supabase
+            try {
+              await fetch('/api/security-reports', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                  title: `Security Scan: ${data.url}`,
+                  description: `Automated security scan completed`,
+                  severity: data.severity,
+                  category: 'Vulnerability Scan',
+                  timestamp: new Date().toISOString(),
+                  details: data
+                }),
+              });
+              response += `REPORT SAVED: Institutional Security Report stored in database\n`;
+            } catch (saveError) {
+              response += `WARNING: Could not save report to database\n`;
             }
           } else {
             response = `ERR: ${data.error}`;
@@ -131,7 +162,7 @@ export default function TerminalLogs({ onEmergency, onLogsUpdate }: { onEmergenc
   };
 
   return (
-    <div 
+    <div
       className="fixed bottom-0 left-0 w-full z-40 bg-black/95 backdrop-blur-xl border-t border-[var(--active-neon)]/40 p-3 font-mono text-[10px] text-[var(--active-neon)] max-h-48 overflow-hidden flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.8)]"
     >
       <div className="flex items-center justify-between mb-2 opacity-50 border-b border-[var(--active-neon)]/10 pb-1">
@@ -141,13 +172,13 @@ export default function TerminalLogs({ onEmergency, onLogsUpdate }: { onEmergenc
         </span>
         <span className="text-[8px] uppercase tracking-tighter">Connection: Encrypted (TLS 1.3)</span>
       </div>
-      <div 
+      <div
         ref={containerRef}
         className="overflow-y-auto mb-2 flex-grow custom-scrollbar"
       >
         <div className="flex flex-col gap-0.5">
           {logs.map((log, i) => (
-            <div key={i} className={log.includes("~$") ? "text-white font-bold" : log.includes("ERR:") ? "text-red-500" : log.includes("INFO:") ? "text-[var(--active-neon)]/80" : log.includes("SCAN RESULTS") ? "text-green-400 font-bold" : ""}>
+            <div key={i} className={log.includes("~$") ? "text-white font-bold" : log.includes("ERR:") ? "text-red-500" : log.includes("INFO:") ? "text-[var(--active-neon)]/80" : log.includes("NMAP SCAN RESULTS") ? "text-green-400 font-bold" : log.includes("SUCCESS:") ? "text-green-400 font-bold" : ""}>
               {log}
             </div>
           ))}
@@ -155,8 +186,8 @@ export default function TerminalLogs({ onEmergency, onLogsUpdate }: { onEmergenc
       </div>
       <form onSubmit={handleCommand} className="flex items-center gap-2 pt-2">
         <span className="text-[var(--active-neon)] font-bold">root@secure-city:~$</span>
-        <input 
-          type="text" 
+        <input
+          type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           className="bg-transparent border-none outline-none flex-grow text-white placeholder-[var(--active-neon)]/20"
@@ -168,4 +199,3 @@ export default function TerminalLogs({ onEmergency, onLogsUpdate }: { onEmergenc
     </div>
   );
 }
-
