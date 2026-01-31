@@ -1,7 +1,0 @@
-{
-  "/_not-found/page": "/_not-found",
-  "/api/scan-vulnerability/route": "/api/scan-vulnerability",
-  "/security/page": "/security",
-  "/topology/page": "/topology",
-  "/page": "/"
-}
