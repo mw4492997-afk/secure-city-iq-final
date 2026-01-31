@@ -1,70 +1,18 @@
 "use client";
 
-import { useState } from 'react';
-
 interface TerminalLogsProps {
-  onEmergency?: () => void;
-  onLogsUpdate?: (logs: string[]) => void;
+  logs: string[];
 }
 
-export default function TerminalLogs({ onEmergency, onLogsUpdate }: TerminalLogsProps) {
-  const [logs, setLogs] = useState<string[]>([]);
-  const [currentCommand, setCurrentCommand] = useState('');
-
-  const handleCommand = async (command: string) => {
-    let response = '';
-    switch (command) {
-      case "net_stat":
-        try {
-          const netStatResponse = await fetch('/api/net-stat');
-          const netData = await netStatResponse.json();
-          if (netStatResponse.ok) {
-            response = `IP: ${netData.ip} | LOCATION: ${netData.city}, ${netData.country} | TIMEZONE: ${netData.timezone} | STATUS: ${netData.network_status}`;
-          } else {
-            response = "ERR: Failed to retrieve network statistics";
-          }
-        } catch (error) {
-          response = "ERR: Network statistics unavailable";
-        }
-        break;
-      default:
-        response = "Unknown command";
-    }
-    const newLog = `> ${command}\n${response}`;
-    const updatedLogs = [...logs, newLog];
-    setLogs(updatedLogs);
-    if (onLogsUpdate) {
-      onLogsUpdate(updatedLogs);
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleCommand(currentCommand);
-      setCurrentCommand('');
-    }
-  };
-
+export default function TerminalLogs({ logs }: TerminalLogsProps) {
   return (
-    <div className="terminal-container z-50">
-      <div className="flex-1 overflow-y-auto mb-4">
+    <div className="flex-1 bg-black border border-green-400/50 rounded-lg p-4 overflow-hidden">
+      <div className="h-full overflow-y-auto">
         {logs.map((log, index) => (
-          <div key={index} className="mb-2 text-[var(--active-neon)]">
+          <div key={index} className="mb-2 text-green-400 font-mono text-sm">
             <pre className="whitespace-pre-wrap">{log}</pre>
           </div>
         ))}
-      </div>
-      <div className="flex items-center">
-        <span className="text-[var(--active-neon)] mr-2">{'>'}</span>
-        <input
-          type="text"
-          value={currentCommand}
-          onChange={(e) => setCurrentCommand(e.target.value)}
-          onKeyDown={handleKeyDown}
-          autoFocus
-          className="flex-1 bg-transparent border-none outline-none text-[var(--active-neon)] z-50"
-          placeholder="Type a command..."
-        />
       </div>
     </div>
   );
