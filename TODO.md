@@ -1,6 +1,7 @@
-# TODO: Remove Authentication Restrictions for Secure City Intelligence Interface
-
-- [x] Edit src/app/page.tsx to remove hardcoded authentication checks and SecurityPortal render
-- [x] Run git add . to stage changes
-- [x] Run git commit -m "Remove authentication restrictions for full interface access"
-- [x] Run git push to update the live server
+- [x] Update import in src/components/ui/dialog.tsx to use "@/lib/utils"
+- [x] Update import in src/components/ui/button.tsx to use "@/lib/utils"
+- [x] Update import in src/components/ui/input.tsx to use "@/lib/utils"
+- [x] Update import in src/components/ui/card.tsx to use "@/lib/utils"
+- [x] Update import in src/components/ui/textarea.tsx to use "@/lib/utils"
+- [ ] Add /.next/ to .gitignore
+- [ ] Commit and push changes
