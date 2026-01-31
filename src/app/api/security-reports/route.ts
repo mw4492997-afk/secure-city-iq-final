@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { saveSecurityReport, getSecurityReports } from '@/lib/supabase'
+import { saveSecurityReport, getSecurityReports } from '../../../lib/supabase'
 
 export async function POST(request: NextRequest) {
   try {
