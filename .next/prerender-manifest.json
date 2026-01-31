@@ -24,13 +24,61 @@
         "x-next-revalidated-tags",
         "x-next-revalidate-tag-token"
       ]
+    },
+    "/topology": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "Next-Action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/topology",
+      "dataRoute": "/topology.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
+    },
+    "/security": {
+      "experimentalBypassFor": [
+        {
+          "type": "header",
+          "key": "Next-Action"
+        },
+        {
+          "type": "header",
+          "key": "content-type",
+          "value": "multipart/form-data;.*"
+        }
+      ],
+      "initialRevalidateSeconds": false,
+      "srcRoute": "/security",
+      "dataRoute": "/security.rsc",
+      "allowHeader": [
+        "host",
+        "x-matched-path",
+        "x-prerender-revalidate",
+        "x-prerender-revalidate-if-generated",
+        "x-next-revalidated-tags",
+        "x-next-revalidate-tag-token"
+      ]
     }
   },
   "dynamicRoutes": {},
   "notFoundRoutes": [],
   "preview": {
-    "previewModeId": "895b9af26ebfaef21a4f6cec3a921a47",
-    "previewModeSigningKey": "bc34bcef45ba42a788aa9f432336ae5ad370faf73f5a53dc5f234ad42401a7af",
-    "previewModeEncryptionKey": "738052496f7f6db8a3030c2ed7542156c0287755fefa1dd92478161cf37afc8b"
+    "previewModeId": "d69d47be0e6043675f2a2caba64a1e4c",
+    "previewModeSigningKey": "ba63b76f424592f43f08b6c9f0773cc3d7eacf91e3092cf526b5c6c59979f7d7",
+    "previewModeEncryptionKey": "380690e63cdfe0b8d5c6d5fa04ff7153ce30c658544ae17da5b66141efc67f51"
   }
 }

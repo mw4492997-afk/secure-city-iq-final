@@ -1,1 +1,7 @@
-{}
+{
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/scan-vulnerability/route": "app/api/scan-vulnerability/route.js",
+  "/security/page": "app/security/page.js",
+  "/topology/page": "app/topology/page.js",
+  "/page": "app/page.js"
+}

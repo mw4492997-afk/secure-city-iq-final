@@ -3,5 +3,5 @@
 - [x] Update import in src/components/ui/input.tsx to use "@/lib/utils"
 - [x] Update import in src/components/ui/card.tsx to use "@/lib/utils"
 - [x] Update import in src/components/ui/textarea.tsx to use "@/lib/utils"
-- [ ] Add /.next/ to .gitignore
-- [ ] Commit and push changes
+- [x] Add /.next/ to .gitignore (already present)
+- [x] Commit and push changes

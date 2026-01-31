@@ -26,6 +26,18 @@
       "regex": "^/_not\\-found(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/security",
+      "regex": "^/security(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/security(?:/)?$"
+    },
+    {
+      "page": "/topology",
+      "regex": "^/topology(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/topology(?:/)?$"
     }
   ],
   "dataRoutes": [],
