@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import RadarHUD from "@/components/RadarHUD";
 import TerminalLogs from "@/components/TerminalLogs";
+import SecurityCharts from "@/components/SecurityCharts";
 import SecurityPortal from "@/components/SecurityPortal";
 import { Toaster, toast } from "sonner";
 import { ShieldAlert } from "lucide-react";
@@ -48,18 +49,26 @@ export default function Home() {
   }
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-[var(--cyber-bg)] font-sans text-zinc-100 overflow-hidden transition-colors duration-500">
+    <div className="relative min-h-screen bg-[var(--cyber-bg)] font-sans text-zinc-100 overflow-hidden transition-colors duration-500">
       <div className="crt-overlay" />
       <div className="scanline" />
       <Toaster position="top-right" theme="dark" />
 
-      {/* Centered Radar HUD */}
-      <div className="flex-1 flex items-center justify-center">
-        <RadarHUD />
+      {/* Operational Status */}
+      <div className="fixed top-0 left-0 right-0 bg-[var(--cyber-bg)] border-b border-[var(--active-neon)]/20 p-2 text-center text-[var(--active-neon)] z-10">
+        Operational Status: Stable
+      </div>
+
+      {/* Dashboard Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-24 px-6 min-h-screen">
+        <SecurityCharts />
+        <div className="flex justify-center items-center">
+          <RadarHUD />
+        </div>
       </div>
 
       {/* Terminal Logs at Bottom */}
-      <div className="w-full">
+      <div className="fixed bottom-0 left-0 right-0 w-full z-20">
         <TerminalLogs onEmergency={toggleEmergency} onLogsUpdate={setConsoleLogs} />
       </div>
 

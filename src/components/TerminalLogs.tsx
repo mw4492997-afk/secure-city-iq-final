@@ -46,7 +46,7 @@ export default function TerminalLogs({ onEmergency, onLogsUpdate }: TerminalLogs
   };
 
   return (
-    <div className="terminal-container">
+    <div className="terminal-container z-50">
       <div className="flex-1 overflow-y-auto mb-4">
         {logs.map((log, index) => (
           <div key={index} className="mb-2 text-[var(--active-neon)]">
@@ -62,7 +62,7 @@ export default function TerminalLogs({ onEmergency, onLogsUpdate }: TerminalLogs
           onChange={(e) => setCurrentCommand(e.target.value)}
           onKeyDown={handleKeyDown}
           autoFocus
-          className="flex-1 bg-transparent border-none outline-none text-[var(--active-neon)]"
+          className="flex-1 bg-transparent border-none outline-none text-[var(--active-neon)] z-50"
           placeholder="Type a command..."
         />
       </div>
