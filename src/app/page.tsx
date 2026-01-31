@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import RadarHUD from "@/components/RadarHUD";
 import TerminalLogs from "@/components/TerminalLogs";
 import SecurityCharts from "@/components/SecurityCharts";
@@ -89,14 +90,25 @@ export default function Home() {
   }
 
   return (
-    <div className="relative min-h-screen bg-black font-sans text-green-400 overflow-hidden">
+    <div className="relative min-h-screen bg-black font-sans text-green-400 overflow-hidden hexagonal-bg">
       <div className="crt-overlay" />
       <div className="scanline" />
       <Toaster position="top-right" theme="dark" />
 
-      {/* Operational Status */}
-      <div className="fixed top-0 left-0 right-0 bg-black border-b border-green-400/50 p-4 text-center text-green-400 z-10 shadow-lg shadow-green-400/20">
-        <span className="animate-pulse">OPERATIONAL STATUS: STABLE</span>
+      {/* Header with Navigation and Operator Info */}
+      <div className="fixed top-0 left-0 right-0 bg-black border-b border-green-400/50 p-4 z-10 shadow-lg shadow-green-400/20 flex justify-between items-center">
+        <div className="flex space-x-4">
+          <Link href="/" className="text-green-400 hover:text-green-300 transition-colors">DASHBOARD</Link>
+          <Link href="/topology" className="text-green-400 hover:text-green-300 transition-colors">TOPOLOGY</Link>
+          <Link href="/security" className="text-green-400 hover:text-green-300 transition-colors">SECURITY</Link>
+          <Link href="/settings" className="text-green-400 hover:text-green-300 transition-colors">SETTINGS</Link>
+        </div>
+        <div className="text-center flex-1">
+          <span className="animate-pulse">OPERATIONAL STATUS: STABLE</span>
+        </div>
+        <div className="text-green-400">
+          OPERATOR: ADMIN_ROOT
+        </div>
       </div>
 
       {/* Dashboard Grid */}
@@ -109,6 +121,11 @@ export default function Home() {
         {/* Middle Column: Main Terminal logs */}
         <div className="border border-green-400/50 rounded-lg p-4 shadow-lg shadow-green-400/20">
           <TerminalLogs logs={consoleLogs} />
+          <div className="mt-4 flex justify-center">
+            <button className="glass-button text-green-400 px-4 py-2 rounded">
+              EXPORT AUDIT LOG
+            </button>
+          </div>
         </div>
 
         {/* Right Column: Radar Component */}
