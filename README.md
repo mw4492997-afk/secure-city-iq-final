@@ -1,9 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SECURE CITY INTELLIGENCE
+
+Advanced security intelligence platform for comprehensive threat monitoring and response coordination.
+
+## Overview
+
+SECURE CITY INTELLIGENCE is a cutting-edge Next.js-based application designed to provide robust security monitoring, threat detection, and response capabilities. Built with modern web technologies, it offers a comprehensive dashboard for real-time threat analysis, vulnerability scanning, and emergency response coordination.
+
+## Features
+
+- **Real-time Threat Monitoring**: Continuous surveillance and alerting for security threats
+- **Vulnerability Scanning**: Integrated IP and URL scanning capabilities
+- **Emergency Response**: Lockdown protocols and rapid response coordination
+- **Terminal Interface**: Command-line style interaction for advanced operations
+- **Radar System**: Visual threat detection and mapping
+- **Security Reports**: Automated generation of system and threat reports
+- **Network Statistics**: Real-time network monitoring and analysis
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18.x or later
+- npm, yarn, pnpm, or bun package manager
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd secure-city-intelligence
+```
+
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
+# or
+bun install
+```
+
+3. Run the development server:
 ```bash
 npm run dev
 # or
@@ -14,23 +53,46 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser to access the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- `src/app/` - Next.js app router pages and API routes
+- `src/components/` - Reusable React components
+- `src/lib/` - Utility functions and configurations
+- `public/` - Static assets
+- `python-app/` - Backend Python services for vulnerability scanning
 
-## Learn More
+## API Endpoints
 
-To learn more about Next.js, take a look at the following resources:
+- `/api/scan-vulnerability` - Vulnerability scanning service
+- `/api/net-stat` - Network statistics
+- `/api/security-reports` - Security report generation
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Technologies Used
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Frontend**: Next.js, React, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes, Python (Flask for additional services)
+- **Database**: Supabase for data storage and real-time features
+- **UI Components**: Custom components with shadcn/ui
+- **Animations**: Framer Motion
 
-## Deploy on Vercel
+## Security Features
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Authentication portal with secure access controls
+- Encrypted communications
+- Real-time threat detection algorithms
+- Emergency lockdown protocols
+- Comprehensive logging and auditing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Contributing
+
+Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
+
+## License
+
+This project is proprietary software. All rights reserved.
+
+## Support
+
+For support and inquiries, please contact the development team.

@@ -1,9 +1,10 @@
-# TODO: Add Final Interactive Features to Secure City Intelligence Dashboard
+# Final UI Features Implementation
 
-## Steps to Complete
-- [x] Add large 'ACTIVATE LOCKDOWN' emergency button that triggers Red Alert Mode (green to red theme change)
-- [x] Implement Red Alert Mode state management and UI theme switching
-- [x] Position Command Input Field at bottom underneath Terminal Logs
-- [x] Add 'SYSTEM DOCUMENTS' button with tactical styling
-- [x] Update button styling to be more tactical and high-tech
-- [x] Test interactive features and theme switching functionality
+## Tasks
+- [ ] Scanner Logic: Modify handleQuickScan to display rapid fake scanning data in Terminal Logs
+- [ ] Documents Popup: Make SYSTEM DOCUMENTS button open a popup with system specs (40,000 lines, 2026 Rights)
+- [ ] Lockdown Audio: Add subtle mechanical sound effect when Lockdown button is toggled
+- [ ] Live Threat Level: Add fluctuating neon text counter (1-10) in header
+
+## Progress
+- [x] Plan created and approved
