@@ -119,46 +119,40 @@ export default function Home() {
       <div className="scanline" />
       <Toaster position="top-right" theme="dark" />
 
-      {/* Header with Navigation and Operator Info */}
-      <div className="fixed top-0 left-0 right-0 bg-black border-b border-green-400/50 p-4 z-10 shadow-lg shadow-green-400/20 flex justify-between items-center">
-        <div className="flex space-x-4">
-          <Link href="/" className="text-green-400 hover:text-green-300 transition-colors">DASHBOARD</Link>
-          <Link href="/topology" className="text-green-400 hover:text-green-300 transition-colors">TOPOLOGY</Link>
-          <Link href="/security" className="text-green-400 hover:text-green-300 transition-colors">SECURITY</Link>
-          <Link href="/settings" className="text-green-400 hover:text-green-300 transition-colors">SETTINGS</Link>
-        </div>
-        <div className="text-center flex-1">
+      {/* Header with Operator Info */}
+      <div className="fixed top-0 left-0 right-0 bg-black border-b border-green-400/50 p-4 z-10 shadow-lg shadow-green-400/20 flex justify-center items-center">
+        <div className="text-center">
           <span className="animate-pulse">OPERATIONAL STATUS: STABLE</span>
         </div>
-        <div className="text-green-400">
+        <div className="absolute right-4 text-green-400">
           OPERATOR: ADMIN_ROOT
         </div>
       </div>
 
-      {/* Dashboard Grid */}
-      <div className="grid grid-cols-3 gap-6 pt-24 px-6 min-h-screen pb-20">
-        {/* Left Column: Threat Vector Analysis and Attack Origin */}
+      {/* Unified Dashboard Grid */}
+      <div className="grid grid-cols-2 gap-6 pt-24 px-6 min-h-screen pb-20">
+        {/* Top-left: ThreatCharts */}
         <div className="border border-green-400/50 rounded-lg p-4 shadow-lg shadow-green-400/20">
           <SecurityCharts />
         </div>
 
-        {/* Middle Column: Topology Map above Terminal Logs */}
+        {/* Top-right: Topology */}
+        <div className="border border-green-400/50 rounded-lg p-4 shadow-lg shadow-green-400/20">
+          <ThreatMap />
+        </div>
+
+        {/* Bottom-left: Terminal */}
         <div className="border border-green-400/50 rounded-lg p-4 shadow-lg shadow-green-400/20 flex flex-col">
-          <div className="flex-1 mb-4">
-            <ThreatMap />
-          </div>
-          <div className="flex-1">
-            <TerminalLogs logs={consoleLogs} />
-            <div className="mt-4 flex justify-center">
-              <button className="glass-button text-green-400 px-4 py-2 rounded">
-                EXPORT AUDIT LOG
-              </button>
-            </div>
+          <TerminalLogs logs={consoleLogs} />
+          <div className="mt-4 flex justify-center">
+            <button className="glass-button text-green-400 px-4 py-2 rounded">
+              EXPORT AUDIT LOG
+            </button>
           </div>
         </div>
 
-        {/* Right Column: Radar Component */}
-        <div className="border border-green-400/50 rounded-lg p-4 shadow-lg shadow-green-400/20 flex justify-center items-start">
+        {/* Bottom-right: Radar */}
+        <div className="border border-green-400/50 rounded-lg p-4 shadow-lg shadow-green-400/20 flex justify-center items-center">
           <RadarHUD />
         </div>
       </div>

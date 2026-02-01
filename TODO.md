@@ -1,14 +1,20 @@
-# TODO: Create Single-Page Dashboard
+# TODO: Unified Dashboard Implementation
 
-## Steps to Complete
-- [ ] Add necessary imports to src/app/page.tsx (Tabs, ThreatMap, ThreatCard, icons, motion)
-- [ ] Add state variables for vulnerability scanner (url, isScanning, scanResult)
-- [ ] Define StatBox component inline in src/app/page.tsx
-- [ ] Update header navigation to remove /topology and /security links
-- [ ] Replace left column with Tabs component for 'Threat Analysis' and 'Neural Topology'
-- [ ] Implement 'Threat Analysis' tab: SecurityCharts + vulnerability scanner form and results
-- [ ] Implement 'Neural Topology' tab: ThreatMap + stats grid + action grid with ThreatCards
-- [ ] Add handleScan function for scanner logic
-- [ ] Ensure TerminalLogs and RadarHUD remain always visible in middle and right columns
-- [ ] Test tab switching, scanner functionality, and layout responsiveness
-- [ ] Verify unified Command Center works as expected
+## Tasks
+- [x] Update src/app/page.tsx to arrange Radar, Terminal, Topology, and ThreatCharts in a 2x2 grid layout
+- [x] Ensure hexagonal background CSS is applied
+- [ ] Add video background or overlay if assets are available
+- [x] Remove navigation to separate pages (topology, security) since it's a single dashboard
+- [ ] Test the layout and ensure components are properly imported
+
+## Components Mapping
+- Radar: RadarHUD
+- Terminal: TerminalLogs
+- Topology: ThreatMap
+- ThreatCharts: SecurityCharts
+
+## Layout Plan
+- Top-left: ThreatCharts (SecurityCharts)
+- Top-right: Topology (ThreatMap)
+- Bottom-left: Terminal (TerminalLogs)
+- Bottom-right: Radar (RadarHUD)
