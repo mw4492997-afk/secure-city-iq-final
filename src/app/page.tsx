@@ -123,6 +123,8 @@ export default function Home() {
       <div className="fixed top-0 left-0 right-0 bg-black border-b border-green-400/50 p-4 z-10 shadow-lg shadow-green-400/20 flex justify-between items-center">
         <div className="flex space-x-4">
           <Link href="/" className="text-green-400 hover:text-green-300 transition-colors">DASHBOARD</Link>
+          <Link href="/topology" className="text-green-400 hover:text-green-300 transition-colors">TOPOLOGY</Link>
+          <Link href="/security" className="text-green-400 hover:text-green-300 transition-colors">SECURITY</Link>
           <Link href="/settings" className="text-green-400 hover:text-green-300 transition-colors">SETTINGS</Link>
         </div>
         <div className="text-center flex-1">
@@ -140,13 +142,18 @@ export default function Home() {
           <SecurityCharts />
         </div>
 
-        {/* Middle Column: Main Terminal logs */}
-        <div className="border border-green-400/50 rounded-lg p-4 shadow-lg shadow-green-400/20">
-          <TerminalLogs logs={consoleLogs} />
-          <div className="mt-4 flex justify-center">
-            <button className="glass-button text-green-400 px-4 py-2 rounded">
-              EXPORT AUDIT LOG
-            </button>
+        {/* Middle Column: Topology Map above Terminal Logs */}
+        <div className="border border-green-400/50 rounded-lg p-4 shadow-lg shadow-green-400/20 flex flex-col">
+          <div className="flex-1 mb-4">
+            <ThreatMap />
+          </div>
+          <div className="flex-1">
+            <TerminalLogs logs={consoleLogs} />
+            <div className="mt-4 flex justify-center">
+              <button className="glass-button text-green-400 px-4 py-2 rounded">
+                EXPORT AUDIT LOG
+              </button>
+            </div>
           </div>
         </div>
 
