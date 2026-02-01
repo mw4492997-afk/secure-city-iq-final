@@ -6,14 +6,37 @@ import RadarHUD from "@/components/RadarHUD";
 import TerminalLogs from "@/components/TerminalLogs";
 import SecurityCharts from "@/components/SecurityCharts";
 import SecurityPortal from "@/components/SecurityPortal";
+import ThreatMap from "@/components/ThreatMap";
+import ThreatCard from "@/components/ThreatCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster, toast } from "sonner";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, Globe, Server, Cpu, Activity, Zap, Shield, Lock, AlertTriangle, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { motion } from "framer-motion";
+
+interface ScanResult {
+  url: string;
+  severity: string;
+  ssl_info: {
+    valid: boolean;
+    issuer?: string;
+    expiry?: string;
+    issues: string[];
+  };
+  open_ports: number[];
+  vulnerabilities: string[];
+  security_headers: {
+    missing_critical: string[];
+  };
+}
 
 export default function Home() {
   const [emergency, setEmergency] = useState(false);
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [currentCommand, setCurrentCommand] = useState('');
+  const [url, setUrl] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-emergency", emergency.toString());
@@ -99,8 +122,6 @@ export default function Home() {
       <div className="fixed top-0 left-0 right-0 bg-black border-b border-green-400/50 p-4 z-10 shadow-lg shadow-green-400/20 flex justify-between items-center">
         <div className="flex space-x-4">
           <Link href="/" className="text-green-400 hover:text-green-300 transition-colors">DASHBOARD</Link>
-          <Link href="/topology" className="text-green-400 hover:text-green-300 transition-colors">TOPOLOGY</Link>
-          <Link href="/security" className="text-green-400 hover:text-green-300 transition-colors">SECURITY</Link>
           <Link href="/settings" className="text-green-400 hover:text-green-300 transition-colors">SETTINGS</Link>
         </div>
         <div className="text-center flex-1">
