@@ -1,20 +1,8 @@
-# TODO: Unified Dashboard Implementation
+# TODO: Integrate Vulnerability Assessment as Main View
 
 ## Tasks
-- [x] Update src/app/page.tsx to arrange Radar, Terminal, Topology, and ThreatCharts in a 2x2 grid layout
-- [x] Ensure hexagonal background CSS is applied
-- [x] Add video background or overlay if assets are available (no video assets found in repository)
-- [x] Remove navigation to separate pages (topology, security) since it's a single dashboard
-- [x] Test the layout and ensure components are properly imported
-
-## Components Mapping
-- Radar: RadarHUD
-- Terminal: TerminalLogs
-- Topology: ThreatMap
-- ThreatCharts: SecurityCharts
-
-## Layout Plan
-- Top-left: ThreatCharts (SecurityCharts)
-- Top-right: Topology (ThreatMap)
-- Bottom-left: Terminal (TerminalLogs)
-- Bottom-right: Radar (RadarHUD)
+- [x] Modify src/app/page.tsx to use Vulnerability Assessment interface as default view
+- [x] Integrate RadarHUD and TerminalLogs as side-panels
+- [x] Keep hexagonal background consistent
+- [x] Disable navigation to separate pages
+- [ ] Test the layout and functionality
