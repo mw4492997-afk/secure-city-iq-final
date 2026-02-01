@@ -165,18 +165,19 @@ export default function Home() {
 
       // Map IP API response to scanResult format
       const scanResult = {
-        severity: data.country === 'US' ? 'Low' : 'Medium', // Example logic
+        severity: data.country_name === 'United States' ? 'Low' : 'Medium', // Example logic
         vulnerabilities: [], // No vulnerabilities for IP scan
         ssl_info: { valid: true }, // Assume valid for IP
         ip: data.ip,
         city: data.city,
+        country: data.country_name,
         org: data.org
       };
 
       setScanResult(scanResult);
       setConsoleLogs(prev => [...prev.slice(-15),
         `[${new Date().toLocaleTimeString()}] NEURAL_SCAN: Analysis finished for target ${scanTarget}`,
-        `[${new Date().toLocaleTimeString()}] IP_LOCATED: ${data.ip} | ${data.city}, ${data.country} | ${data.org}`,
+        `[${new Date().toLocaleTimeString()}] IP_LOCATED: ${data.ip} | ${data.city}, ${data.country_name} | ${data.org}`,
         `[${new Date().toLocaleTimeString()}] VULN_ASSESS: 0 vulnerabilities mapped`
       ]);
       toast.success(`Analysis Complete. Risk mapped.`);
