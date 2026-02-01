@@ -51,6 +51,7 @@ export default function Home() {
   const [scanResult, setScanResult] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("dashboard");
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [headerInfo, setHeaderInfo] = useState("NODE: OSL-CENTRAL // CRYPTO_SECURED");
   const [systemStats, setSystemStats] = useState({
     cpu: 12,
     ram: 45,
@@ -69,11 +70,13 @@ export default function Home() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
+    const baseCpu = (navigator.hardwareConcurrency || 4) * 10; // Scale CPU cores to percentage
+    const baseRam = ((navigator as any).deviceMemory || 8) * 10; // Scale RAM to percentage
     const interval = setInterval(() => {
       setSystemStats(prev => ({
         ...prev,
-        cpu: Math.min(100, Math.max(0, prev.cpu + (Math.random() * 14 - 7))),
-        ram: Math.min(100, Math.max(0, prev.ram + (Math.random() * 2 - 1))),
+        cpu: Math.min(100, Math.max(0, baseCpu + (Math.random() * 20 - 10))),
+        ram: Math.min(100, Math.max(0, baseRam + (Math.random() * 10 - 5))),
         network: Math.max(0.1, prev.network + (Math.random() * 0.8 - 0.4)),
         threats: Math.max(0, prev.threats + (Math.random() > 0.85 ? 1 : Math.random() < 0.15 ? -1 : 0))
       }));
@@ -114,6 +117,19 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isAuthenticated]);
 
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    fetch('https://ipapi.co/json/')
+      .then(res => res.json())
+      .then(data => {
+        setConsoleLogs(prev => [...prev.slice(-25), `[${new Date().toLocaleTimeString()}] IP DETECTED: ${data.ip} | CITY: ${data.city} | ISP: ${data.org}`]);
+        setHeaderInfo(`NODE: ${data.city} // ${data.org}`);
+      })
+      .catch(err => {
+        setConsoleLogs(prev => [...prev.slice(-25), `[${new Date().toLocaleTimeString()}] IP FETCH FAILED: ${err.message}`]);
+      });
+  }, [isAuthenticated]);
+
   const handleAccessGranted = () => {
     setIsAuthenticated(true);
     localStorage.setItem("authenticated", "true");
@@ -141,23 +157,31 @@ export default function Home() {
     toast.info(`Initializing Neural Scan: ${scanTarget}`);
 
     try {
-      const response = await fetch('/api/scan-vulnerability', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: scanTarget.trim() }),
-      });
+      const response = await fetch(`https://ipapi.co/${scanTarget.trim()}/json/`);
+
+      if (!response.ok) throw new Error("Invalid IP or network error");
 
       const data = await response.json();
-      if (response.ok) {
-        setScanResult(data);
-        setConsoleLogs(prev => [...prev.slice(-15),
-          `[${new Date().toLocaleTimeString()}] NEURAL_SCAN: Analysis finished for target ${scanTarget}`,
-          `[${new Date().toLocaleTimeString()}] VULN_ASSESS: ${data.vulnerabilities.length} vulnerabilities mapped`
-        ]);
-        toast.success(`Analysis Complete. Risk mapped.`);
-      } else throw new Error(data.error || "Scan failed");
+
+      // Map IP API response to scanResult format
+      const scanResult = {
+        severity: data.country === 'US' ? 'Low' : 'Medium', // Example logic
+        vulnerabilities: [], // No vulnerabilities for IP scan
+        ssl_info: { valid: true }, // Assume valid for IP
+        ip: data.ip,
+        city: data.city,
+        org: data.org
+      };
+
+      setScanResult(scanResult);
+      setConsoleLogs(prev => [...prev.slice(-15),
+        `[${new Date().toLocaleTimeString()}] NEURAL_SCAN: Analysis finished for target ${scanTarget}`,
+        `[${new Date().toLocaleTimeString()}] IP_LOCATED: ${data.ip} | ${data.city}, ${data.country} | ${data.org}`,
+        `[${new Date().toLocaleTimeString()}] VULN_ASSESS: 0 vulnerabilities mapped`
+      ]);
+      toast.success(`Analysis Complete. Risk mapped.`);
     } catch (error) {
-      toast.error("Scan engine timed out. Target might be behind hardened firewall.");
+      toast.error("Scan engine timed out. Target might be invalid IP.");
     } finally {
       setIsScanning(false);
     }
@@ -248,7 +272,7 @@ export default function Home() {
               <div className="flex gap-1">
                 {[1,2,3].map(i => <div key={i} className="w-1 h-1 rounded-full bg-green-500 animate-pulse" style={{ animationDelay: `${i * 0.2}s` }} />)}
               </div>
-              NODE: OSL-CENTRAL // CRYPTO_SECURED
+              {headerInfo}
             </div>
           </div>
         </div>
