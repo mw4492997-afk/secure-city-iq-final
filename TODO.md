@@ -5,4 +5,4 @@
 - [x] Integrate RadarHUD and TerminalLogs as side-panels
 - [x] Keep hexagonal background consistent
 - [x] Disable navigation to separate pages
-- [ ] Test the layout and functionality
+- [x] Test the layout and functionality
