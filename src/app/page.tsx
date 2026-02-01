@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster, toast } from "sonner";
 import { ShieldAlert, Globe, Server, Cpu, Activity, Zap, Shield, Lock, AlertTriangle, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
+import CyberPulse from "@/components/CyberPulse";
 
 interface ScanResult {
   url: string;
