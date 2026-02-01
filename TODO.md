@@ -3,9 +3,9 @@
 ## Tasks
 - [x] Update src/app/page.tsx to arrange Radar, Terminal, Topology, and ThreatCharts in a 2x2 grid layout
 - [x] Ensure hexagonal background CSS is applied
-- [ ] Add video background or overlay if assets are available
+- [x] Add video background or overlay if assets are available (no video assets found in repository)
 - [x] Remove navigation to separate pages (topology, security) since it's a single dashboard
-- [ ] Test the layout and ensure components are properly imported
+- [x] Test the layout and ensure components are properly imported
 
 ## Components Mapping
 - Radar: RadarHUD
