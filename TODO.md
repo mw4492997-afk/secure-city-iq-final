@@ -1,8 +1,9 @@
-# TODO: Integrate Vulnerability Assessment as Main View
+# TODO: Add Final Interactive Features to Secure City Intelligence Dashboard
 
-## Tasks
-- [x] Modify src/app/page.tsx to use Vulnerability Assessment interface as default view
-- [x] Integrate RadarHUD and TerminalLogs as side-panels
-- [x] Keep hexagonal background consistent
-- [x] Disable navigation to separate pages
-- [x] Test the layout and functionality
+## Steps to Complete
+- [x] Add large 'ACTIVATE LOCKDOWN' emergency button that triggers Red Alert Mode (green to red theme change)
+- [x] Implement Red Alert Mode state management and UI theme switching
+- [x] Position Command Input Field at bottom underneath Terminal Logs
+- [x] Add 'SYSTEM DOCUMENTS' button with tactical styling
+- [x] Update button styling to be more tactical and high-tech
+- [x] Test interactive features and theme switching functionality

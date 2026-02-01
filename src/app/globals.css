@@ -91,6 +91,12 @@
     --cyber-bg: #1a0000;
   }
 
+  [data-red-alert="true"] {
+    --active-neon: var(--neon-red);
+    --active-neon-glow: rgba(239, 68, 68, 0.8);
+    --cyber-bg: #1a0000;
+  }
+
   .dark {
 
   --background: oklch(0.145 0 0);
