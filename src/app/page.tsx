@@ -52,14 +52,22 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [currentTime, setCurrentTime] = useState(new Date());
   const [headerInfo, setHeaderInfo] = useState("NODE: OSL-CENTRAL // CRYPTO_SECURED");
+  const [showSecurityCard, setShowSecurityCard] = useState(false);
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockPassword, setLockPassword] = useState("");
+  const [isAlertMode, setIsAlertMode] = useState(false);
+  const [isStealthMode, setIsStealthMode] = useState(false);
   const [systemStats, setSystemStats] = useState({
     cpu: 12,
     ram: 45,
     network: 1.2,
     threats: 3,
     uptime: "124:12:44",
-    encryption: 256
+    encryption: 256,
+    encryptionKey: 'AES-256-GCM-' + Math.random().toString(36).substr(2, 16).toUpperCase()
   });
+
+  const [firewallBlocks, setFirewallBlocks] = useState(1247);
 
   const [activeThreats, setActiveThreats] = useState([
     { id: 1, type: "DDoS Attempt", origin: "RU_NODE_X", severity: "High", time: "2s ago" },
@@ -67,6 +75,19 @@ export default function Home() {
     { id: 3, type: "Brute Force", origin: "UNKNOWN_IP", severity: "Low", time: "1m ago" },
     { id: 4, type: "Malware Payload", origin: "DE_STUTTGART", severity: "High", time: "5s ago" },
   ]);
+
+  const [networkMetrics, setNetworkMetrics] = useState({
+    connectionType: 'unknown',
+    downlink: 0,
+    rtt: 0
+  });
+
+  const [networkStability, setNetworkStability] = useState<number[]>([]);
+
+  const [nodeLatencies, setNodeLatencies] = useState({
+    '8.8.8.8': 0,
+    '1.1.1.1': 0
+  });
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -94,6 +115,127 @@ export default function Home() {
       setIsAuthenticated(true);
     }
   }, []);
+
+  // Professional Voice Alerts - System Initialization
+  useEffect(() => {
+    if (isAuthenticated && window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance('System initialized. All modules operational. Network monitoring active.');
+      utterance.rate = 0.8;
+      utterance.pitch = 0.8;
+      utterance.volume = 0.7;
+      window.speechSynthesis.speak(utterance);
+    }
+  }, [isAuthenticated]);
+
+  // Real-Time Network Analytics
+  useEffect(() => {
+    if (isAuthenticated) {
+      const updateNetworkMetrics = () => {
+        const connection = (navigator as any).connection || (navigator as any).mozConnection || (navigator as any).webkitConnection;
+        if (connection) {
+          const newDownlink = connection.downlink || 0;
+          setNetworkMetrics({
+            connectionType: connection.effectiveType || 'unknown',
+            downlink: newDownlink,
+            rtt: connection.rtt || 0
+          });
+
+          // Update network stability chart
+          setNetworkStability(prev => {
+            const newStability = [...prev, Math.min(100, Math.max(0, newDownlink * 10))];
+            return newStability.slice(-20); // Keep last 20 points
+          });
+        }
+      };
+
+      updateNetworkMetrics();
+      const interval = setInterval(updateNetworkMetrics, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated]);
+
+  // Fallback: Generate small random fluctuations every second for active chart appearance
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'signal') {
+      const interval = setInterval(() => {
+        setNetworkStability(prev => {
+          if (prev.length === 0) return prev;
+          const lastValue = prev[prev.length - 1];
+          const fluctuation = (Math.random() - 0.5) * 1; // ±0.5 Mbps fluctuation
+          const newValue = Math.min(100, Math.max(0, lastValue + fluctuation));
+          return [...prev.slice(1), newValue]; // Shift and add new point
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, activeTab]);
+
+  // Global Node Latency - Ping Function
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'topology') {
+      const ping = async (url: string): Promise<number> => {
+        const start = performance.now();
+        try {
+          await fetch(url, { method: 'HEAD', mode: 'no-cors' });
+          return performance.now() - start;
+        } catch {
+          return -1;
+        }
+      };
+
+      const updateLatencies = async () => {
+        const [googleLatency, cloudflareLatency] = await Promise.all([
+          ping('https://8.8.8.8'),
+          ping('https://1.1.1.1')
+        ]);
+
+        setNodeLatencies({
+          '8.8.8.8': googleLatency > 0 ? Math.round(googleLatency) : 0,
+          '1.1.1.1': cloudflareLatency > 0 ? Math.round(cloudflareLatency) : 0
+        });
+      };
+
+      updateLatencies();
+      const interval = setInterval(updateLatencies, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, activeTab]);
+
+  // Firewall Intrusion Simulation - Logs simulated blocks when firewall tab is active
+  useEffect(() => {
+    if (isAuthenticated && activeTab === 'firewall') {
+      const maliciousIPs = [
+        '185.12.4.92', '203.0.113.1', '198.51.100.1', '192.0.2.1',
+        '10.0.0.1', '172.16.0.1', '192.168.1.1', '127.0.0.1'
+      ];
+
+      const intrusionTypes = [
+        'DDoS Attempt', 'SQL Injection', 'Brute Force', 'Malware Payload',
+        'Port Scan', 'XSS Attack', 'CSRF Attempt', 'Directory Traversal'
+      ];
+
+      const logIntrusion = () => {
+        const ip = maliciousIPs[Math.floor(Math.random() * maliciousIPs.length)];
+        const type = intrusionTypes[Math.floor(Math.random() * intrusionTypes.length)];
+        const severity = Math.random() > 0.7 ? 'High' : Math.random() > 0.4 ? 'Medium' : 'Low';
+
+        setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] FIREWALL_BLOCK: ${type} from ${ip} - ${severity} threat neutralized`]);
+        setFirewallBlocks(prev => prev + 1);
+
+        // Voice alert for high severity
+        if (severity === 'High' && window.speechSynthesis) {
+          const utterance = new SpeechSynthesisUtterance(`High threat blocked from ${ip}`);
+          utterance.rate = 0.9;
+          utterance.pitch = 0.7;
+          utterance.volume = 0.6;
+          window.speechSynthesis.speak(utterance);
+        }
+      };
+
+      const interval = setInterval(logIntrusion, 3000);
+      return () => clearInterval(interval);
+    }
+  }, [isAuthenticated, activeTab]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -163,24 +305,49 @@ export default function Home() {
 
       const data = await response.json();
 
+      // Calculate Risk Score based on IP type
+      let riskScore = 50; // Base score
+      const hostingProviders = ['amazon', 'microsoft', 'google', 'digitalocean', 'linode', 'vultr', 'hetzner'];
+      const isHostingProvider = hostingProviders.some(provider => data.org?.toLowerCase().includes(provider));
+
+      if (isHostingProvider) {
+        riskScore = 85; // High monitoring required
+      } else if (data.country_name === 'United States') {
+        riskScore = 25; // Low risk
+      } else {
+        riskScore = 60; // Medium risk
+      }
+
       // Map IP API response to scanResult format
       const scanResult = {
-        severity: data.country_name === 'United States' ? 'Low' : 'Medium', // Example logic
+        severity: riskScore > 80 ? 'High' : riskScore > 50 ? 'Medium' : 'Low',
         vulnerabilities: [], // No vulnerabilities for IP scan
         ssl_info: { valid: true }, // Assume valid for IP
         ip: data.ip,
         city: data.city,
         country: data.country_name,
-        org: data.org
+        org: data.org,
+        riskScore: riskScore
       };
 
       setScanResult(scanResult);
+
+      // Professional Voice Alert
+      if (window.speechSynthesis) {
+        const voiceAlert = new SpeechSynthesisUtterance(`Target identified. Location: ${data.city}. ISP: ${data.org}. Security clearance: Verified.`);
+        voiceAlert.rate = 0.8;
+        voiceAlert.pitch = 0.8;
+        voiceAlert.volume = 0.7;
+        window.speechSynthesis.speak(voiceAlert);
+      }
+
       setConsoleLogs(prev => [...prev.slice(-15),
         `[${new Date().toLocaleTimeString()}] NEURAL_SCAN: Analysis finished for target ${scanTarget}`,
         `[${new Date().toLocaleTimeString()}] IP_LOCATED: ${data.ip} | ${data.city}, ${data.country_name} | ${data.org}`,
+        `[${new Date().toLocaleTimeString()}] RISK_ASSESS: Score ${riskScore}/100 - ${riskScore > 80 ? 'High Monitoring Required' : riskScore > 50 ? 'Medium Risk' : 'Low Risk'}`,
         `[${new Date().toLocaleTimeString()}] VULN_ASSESS: 0 vulnerabilities mapped`
       ]);
-      toast.success(`Analysis Complete. Risk mapped.`);
+      toast.success(`Analysis Complete. Risk score: ${riskScore}/100.`);
     } catch (error) {
       toast.error("Scan engine timed out. Target might be invalid IP.");
     } finally {
@@ -193,8 +360,9 @@ export default function Home() {
     if (!commandText) return;
 
     if (commandText === 'help') {
-      setConsoleLogs(prev => [...prev.slice(-15), 
-        "COMMAND_LIST: scan, status, clear, lockdown, decrypt, trace, nodes"
+      setConsoleLogs(prev => [...prev.slice(-15),
+        "COMMAND_LIST: scan, status, clear, lockdown, decrypt, trace, nodes",
+        "SECRET_COMMANDS: /OVERRIDE, /RECON, /GHOST, /SUDO_ACCESS, /SAFE"
       ]);
     } else if (commandText === 'clear') {
       setConsoleLogs([]);
@@ -206,6 +374,56 @@ export default function Home() {
         success: 'Decryption complete. No hidden payloads.',
         error: 'Decryption failed.'
       });
+    } else if (commandText === '/override') {
+      setIsAlertMode(true);
+      if (window.speechSynthesis) {
+        const utterance = new SpeechSynthesisUtterance('Alert mode activated. System override engaged.');
+        utterance.rate = 0.9;
+        utterance.pitch = 0.7;
+        utterance.volume = 0.8;
+        window.speechSynthesis.speak(utterance);
+      }
+      setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] ALERT_MODE: UI color scheme changed to Alert Red`]);
+      toast.error("ALERT MODE ACTIVATED - SYSTEM OVERRIDE");
+    } else if (commandText === '/recon') {
+      const targets = ['192.168.1.1', '10.0.0.1', '172.16.0.1', '8.8.8.8', '1.1.1.1', '208.67.222.222'];
+      let index = 0;
+      const interval = setInterval(() => {
+        if (index >= targets.length) {
+          clearInterval(interval);
+          return;
+        }
+        const target = targets[index];
+        setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] RECON_SCAN: Scanning ${target} - ${Math.random() > 0.5 ? 'OPEN' : 'CLOSED'}`]);
+        index++;
+      }, 300);
+      toast.info("RECON MODE ACTIVATED - Rapid IP scanning initiated");
+    } else if (commandText === '/ghost') {
+      setIsStealthMode(true);
+      setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] STEALTH_MODE: UI opacity reduced to 50%`]);
+      toast.success("STEALTH MODE ACTIVATED - Discreet operations enabled");
+    } else if (commandText === '/sudo_access') {
+      const passwords = [
+        'admin:password123',
+        'root:qwerty',
+        'user:letmein',
+        'system:admin123',
+        'network:securepass',
+        'database:dbadmin',
+        'server:serverpass',
+        'api:key123456'
+      ];
+      passwords.forEach((pwd, i) => {
+        setTimeout(() => {
+          setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] DECRYPTED: ${pwd}`]);
+        }, i * 200);
+      });
+      toast.warning("SUDO ACCESS GRANTED - Passwords decrypted");
+    } else if (commandText === '/safe') {
+      setIsAlertMode(false);
+      setIsStealthMode(false);
+      setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] SAFE_MODE: All settings reverted to default Green mode`]);
+      toast.success("SAFE MODE ACTIVATED - System normalized");
     } else {
       setConsoleLogs(prev => [...prev.slice(-15), `SYSTEM_RUN: ${commandText}`]);
       setTimeout(() => {
@@ -214,12 +432,83 @@ export default function Home() {
     }
   };
 
+  const handleVulnerabilityScan = async () => {
+    if (!scanTarget.trim()) return;
+    setIsScanning(true);
+
+    // Voice alert
+    if (window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance('Vulnerability scan initiated');
+      utterance.rate = 0.8;
+      utterance.pitch = 0.8;
+      utterance.volume = 0.7;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    // Simulate scanning common ports
+    const ports = [80, 443, 8080, 22, 21, 25, 53, 110, 143, 993];
+    const scanResults: string[] = [];
+
+    for (const port of ports) {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate scan time
+      const isOpen = Math.random() > 0.7; // Simulate some ports being open
+      if (isOpen) {
+        scanResults.push(`Port ${port}: OPEN - ${port === 80 ? 'HTTP' : port === 443 ? 'HTTPS' : port === 22 ? 'SSH' : 'Unknown Service'}`);
+      }
+    }
+
+    setConsoleLogs(prev => [...prev.slice(-15),
+      `[${new Date().toLocaleTimeString()}] VULN_SCAN: Starting comprehensive port analysis for ${scanTarget}`,
+      ...scanResults.map(result => `[${new Date().toLocaleTimeString()}] ${result}`),
+      `[${new Date().toLocaleTimeString()}] SCAN_COMPLETE: Analysis finished. ${scanResults.length} open ports detected.`
+    ]);
+
+    toast.success(`Vulnerability scan complete. ${scanResults.length} open ports found.`);
+    setIsScanning(false);
+  };
+
+  const handleKeyRotation = () => {
+    const newKey = 'AES-256-GCM-' + Math.random().toString(36).substr(2, 16).toUpperCase();
+    setSystemStats(prev => ({ ...prev, encryptionKey: newKey }));
+
+    // Voice alert
+    if (window.speechSynthesis) {
+      const utterance = new SpeechSynthesisUtterance('Keys rotated successfully');
+      utterance.rate = 0.8;
+      utterance.pitch = 0.8;
+      utterance.volume = 0.7;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    setConsoleLogs(prev => [...prev.slice(-15),
+      `[${new Date().toLocaleTimeString()}] KEY_ROTATION: Initiating cryptographic key rotation...`,
+      `[${new Date().toLocaleTimeString()}] ENCRYPTION_UPDATE: New AES-256-GCM key generated`,
+      `[${new Date().toLocaleTimeString()}] VAULT_UPDATE: All encrypted sessions updated with new key`
+    ]);
+
+    toast.success("Encryption keys rotated successfully.");
+  };
+
+  const handleUnlock = () => {
+    if (lockPassword.toLowerCase() === 'orchids') {
+      setIsLocked(false);
+      setLockPassword('');
+      toast.success("Terminal unlocked. Access restored.");
+    } else {
+      toast.error("Invalid passphrase. Access denied.");
+    }
+  };
+
+  if (!isAuthenticated) {
+    return <SecurityPortal onAccessGranted={handleAccessGranted} />;
+  }
+
   if (!isAuthenticated) {
     return <SecurityPortal onAccessGranted={handleAccessGranted} />;
   }
 
   return (
-    <div className={`min-h-screen bg-[#020202] text-zinc-300 font-mono selection:bg-[var(--active-neon)] selection:text-black overflow-hidden relative ${redAlert ? 'animate-pulse bg-red-950/20' : ''}`}>
+    <div className={`min-h-screen bg-[#020202] text-zinc-300 font-mono selection:bg-[var(--active-neon)] selection:text-black overflow-hidden relative ${redAlert ? 'animate-pulse bg-red-950/20' : ''} ${isAlertMode ? 'alert-mode' : ''} ${isStealthMode ? 'stealth-mode' : ''}`}>
       {/* Cinematic Background Layer */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,#0a0a0a_0%,#000_100%)]" />
@@ -302,9 +591,9 @@ export default function Home() {
               <div className="text-xs font-black text-white leading-none mb-1">SUPER_USER</div>
               <div className="text-[9px] text-[var(--active-neon)] font-black uppercase tracking-widest">CLEARANCE LVL 5</div>
             </div>
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-950 border border-white/10 p-[1px] shadow-2xl">
-              <div className="w-full h-full rounded-[inherit] bg-black flex items-center justify-center">
-                <User className="w-6 h-6 text-zinc-400" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-950 border border-white/10 p-[1px] shadow-2xl cursor-pointer" onClick={() => setShowSecurityCard(true)}>
+              <div className="w-full h-full rounded-[inherit] bg-black flex items-center justify-center hover:bg-[var(--active-neon)]/5 transition-all">
+                <User className="w-6 h-6 text-zinc-400 hover:text-[var(--active-neon)] transition-colors" />
               </div>
             </div>
           </div>
@@ -324,8 +613,8 @@ export default function Home() {
               <div className="space-y-1.5">
                 <MenuLink icon={<BarChart3 className="w-4 h-4" />} label="Command Center" active={activeTab === 'dashboard'} onClick={() => setActiveTab('dashboard')} />
                 <MenuLink icon={<Globe className="w-4 h-4" />} label="Global Intelligence" active={activeTab === 'intelligence'} onClick={() => setActiveTab('intelligence')} />
-                <MenuLink icon={<Network className="w-4 h-4" />} label="Node Topology" onClick={() => setActiveTab('topology')} />
-                <MenuLink icon={<Radio className="w-4 h-4" />} label="Signal Intercept" onClick={() => setActiveTab('signal')} />
+                <MenuLink icon={<Network className="w-4 h-4" />} label="Node Topology" active={activeTab === 'topology'} onClick={() => setActiveTab('topology')} />
+                <MenuLink icon={<Radio className="w-4 h-4" />} label="Signal Intercept" active={activeTab === 'signal'} onClick={() => setActiveTab('signal')} />
               </div>
             </div>
             
@@ -390,12 +679,16 @@ export default function Home() {
 
         {/* Main Intelligence Workspace */}
         <main className="flex-1 overflow-y-auto relative custom-scrollbar">
-          <motion.div 
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="p-10 max-w-[1600px] mx-auto space-y-12 pb-32"
-          >
+          <AnimatePresence mode="wait">
+            {activeTab === 'dashboard' && (
+              <motion.div
+                key="dashboard"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="p-10 max-w-[1600px] mx-auto space-y-12 pb-32"
+              >
             
             {/* Cinematic Intelligence Banner */}
             <motion.div 
@@ -671,6 +964,253 @@ export default function Home() {
               </motion.div>
             </div>
           </motion.div>
+            )}
+
+            {activeTab === 'intelligence' && (
+              <motion.div
+                key="intelligence"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="h-full w-full flex items-center justify-center"
+              >
+                <ThreatMap />
+              </motion.div>
+            )}
+
+            {activeTab === 'topology' && (
+              <motion.div
+                key="topology"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="p-10 max-w-[1600px] mx-auto space-y-12 pb-32"
+              >
+                <div className="text-center space-y-8">
+                  <h2 className="text-6xl font-black text-white tracking-[-0.05em]">NODE TOPOLOGY</h2>
+                  <p className="text-zinc-400 text-xl">Visual grid of server nodes</p>
+                  <div className="grid grid-cols-4 gap-8 max-w-4xl mx-auto">
+                    {Array.from({ length: 16 }, (_, i) => (
+                      <div key={i} className="aspect-square bg-black/40 border border-white/10 rounded-2xl flex items-center justify-center hover:border-[var(--active-neon)]/50 transition-all">
+                        <Server className="w-12 h-12 text-zinc-600" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'signal' && (
+              <motion.div
+                key="signal"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="p-10 max-w-[1600px] mx-auto space-y-12 pb-32"
+              >
+                <div className="text-center space-y-8">
+                  <h2 className="text-6xl font-black text-white tracking-[-0.05em]">SIGNAL INTERCEPT</h2>
+                  <p className="text-zinc-400 text-xl">Real-time network analytics and monitoring</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Connection Type</div>
+                      <div className="text-3xl font-black text-[var(--active-neon)]">{networkMetrics.connectionType}</div>
+                    </div>
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Downlink Speed</div>
+                      <div className="text-3xl font-black text-blue-400">{networkMetrics.downlink} Mbps</div>
+                    </div>
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Round Trip Time</div>
+                      <div className="text-3xl font-black text-green-400">{networkMetrics.rtt} ms</div>
+                    </div>
+                  </div>
+
+                  {/* Network Stability Chart */}
+                  <div className="max-w-4xl mx-auto mt-12">
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-6 tracking-widest">Network Stability Chart</div>
+                      <div className="h-32 w-full">
+                        <svg className="w-full h-full" viewBox="0 0 400 120">
+                          <defs>
+                            <linearGradient id="stabilityGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="rgb(34, 197, 94)" />
+                              <stop offset="50%" stopColor="rgb(59, 130, 246)" />
+                              <stop offset="100%" stopColor="rgb(239, 68, 68)" />
+                            </linearGradient>
+                          </defs>
+                          <path
+                            d={`M 0 60 ${networkStability.map((point, index) => {
+                              const x = (index / (networkStability.length - 1)) * 400;
+                              const y = 120 - (point / 100) * 100;
+                              return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+                            }).join(' ')}`}
+                            fill="none"
+                            stroke="url(#stabilityGradient)"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                          <path
+                            d={`M 0 60 ${networkStability.map((point, index) => {
+                              const x = (index / (networkStability.length - 1)) * 400;
+                              const y = 120 - (point / 100) * 100;
+                              return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
+                            }).join(' ')} L 400 120 L 0 120 Z`}
+                            fill="url(#stabilityGradient)"
+                            fillOpacity="0.1"
+                          />
+                        </svg>
+                      </div>
+                      <div className="flex justify-between text-[10px] text-zinc-600 uppercase font-black mt-4">
+                        <span>Real-time Stability</span>
+                        <span>Downlink: {networkMetrics.downlink} Mbps</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center justify-center">
+                  <RadarHUD />
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'firewall' && (
+              <motion.div
+                key="firewall"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="p-10 max-w-[1600px] mx-auto space-y-12 pb-32"
+              >
+                <div className="text-center space-y-8">
+                  <h2 className="text-6xl font-black text-white tracking-[-0.05em]">ACTIVE FIREWALL</h2>
+                  <p className="text-zinc-400 text-xl">Real-time intrusion detection and blocking system</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Firewall Status</div>
+                      <div className="text-3xl font-black text-green-400">ACTIVE</div>
+                    </div>
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Blocks Today</div>
+                      <div className="text-3xl font-black text-red-400">1,247</div>
+                    </div>
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Detection Rate</div>
+                      <div className="text-3xl font-black text-[var(--active-neon)]">99.8%</div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'scan' && (
+              <motion.div
+                key="scan"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="p-10 max-w-[1600px] mx-auto space-y-12 pb-32"
+              >
+                <div className="text-center space-y-8">
+                  <h2 className="text-6xl font-black text-white tracking-[-0.05em]">VULNERABILITY SCAN</h2>
+                  <p className="text-zinc-400 text-xl">Comprehensive security audit and port analysis</p>
+                  <div className="max-w-4xl mx-auto">
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-6 tracking-widest">Target Analysis</div>
+                      <div className="flex flex-col md:flex-row gap-8 relative z-10 mb-12">
+                        <div className="flex-1 relative group/input">
+                          <div className="absolute inset-0 bg-blue-500/5 rounded-2xl blur-xl group-focus-within/input:bg-blue-500/10 transition-all" />
+                          <input
+                            type="text"
+                            value={scanTarget}
+                            onChange={(e) => setScanTarget(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleVulnerabilityScan()}
+                            placeholder="ENTER TARGET IP FOR VULNERABILITY SCAN..."
+                            className="w-full bg-black/80 border border-white/10 rounded-2xl px-10 py-6 text-lg text-[var(--active-neon)] focus:border-blue-500/50 focus:bg-black outline-none transition-all placeholder:text-zinc-800 font-bold tracking-wide relative z-10"
+                          />
+                          <Search className="absolute right-8 top-1/2 -translate-y-1/2 w-8 h-8 text-zinc-700 pointer-events-none z-10" />
+                        </div>
+                        <button
+                          onClick={handleVulnerabilityScan}
+                          disabled={isScanning || !scanTarget}
+                          className="bg-white text-black px-12 py-6 rounded-2xl font-black text-sm uppercase tracking-[0.3em] hover:bg-[var(--active-neon)] hover:text-black hover:shadow-[0_0_50px_rgba(0,255,153,0.3)] hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-20 flex items-center justify-center gap-4 group/btn"
+                        >
+                          {isScanning ? <RefreshCcw className="w-6 h-6 animate-spin" /> : <Scan className="w-6 h-6 fill-current group-hover/btn:animate-pulse" />}
+                          {isScanning ? 'SCANNING...' : 'INITIATE SCAN'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'vaults' && (
+              <motion.div
+                key="vaults"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="p-10 max-w-[1600px] mx-auto space-y-12 pb-32"
+              >
+                <div className="text-center space-y-8">
+                  <h2 className="text-6xl font-black text-white tracking-[-0.05em]">KEYS & VAULTS</h2>
+                  <p className="text-zinc-400 text-xl">Cryptographic key management and rotation system</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Current Encryption Key</div>
+                      <div className="text-lg font-mono text-[var(--active-neon)] break-all">{systemStats.encryptionKey || 'AES-256-GCM-' + Math.random().toString(36).substr(2, 16).toUpperCase()}</div>
+                      <div className="mt-4">
+                        <button
+                          onClick={handleKeyRotation}
+                          className="w-full bg-[var(--active-neon)] text-black px-6 py-3 rounded-xl font-black text-sm uppercase tracking-[0.3em] hover:bg-white hover:text-black transition-all"
+                        >
+                          ROTATE KEYS
+                        </button>
+                      </div>
+                    </div>
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Encryption Status</div>
+                      <div className="text-3xl font-black text-green-400">{systemStats.encryption} BIT</div>
+                      <div className="text-[10px] text-zinc-600 uppercase font-black mt-2 tracking-widest">AES-256-GCM Active</div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === 'biometric' && (
+              <motion.div
+                key="biometric"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                className="p-10 max-w-[1600px] mx-auto space-y-12 pb-32"
+              >
+                <div className="text-center space-y-8">
+                  <h2 className="text-6xl font-black text-white tracking-[-0.05em]">BIOMETRIC LOGS</h2>
+                  <p className="text-zinc-400 text-xl">Security identity verification and system access logs</p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">System Information</div>
+                      <div className="space-y-2 text-left">
+                        <div className="text-sm text-[var(--active-neon)]">OS: {navigator.platform}</div>
+                        <div className="text-sm text-blue-400">Browser: {navigator.userAgent.split(' ')[0]}</div>
+                        <div className="text-sm text-green-400">Resolution: {window.screen.width}x{window.screen.height}</div>
+                        <div className="text-sm text-yellow-400">Language: {navigator.language}</div>
+                      </div>
+                    </div>
+                    <div className="p-8 bg-black/40 border border-white/10 rounded-2xl">
+                      <div className="text-[10px] text-zinc-500 uppercase font-black mb-4 tracking-widest">Security Clearance</div>
+                      <div className="text-3xl font-black text-green-400">VERIFIED</div>
+                      <div className="text-[10px] text-zinc-600 uppercase font-black mt-2 tracking-widest">Level 5 Access Granted</div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </main>
         
         {/* Extreme Tactical Side-Panel (Terminal) */}
@@ -727,6 +1267,124 @@ export default function Home() {
           </div>
         </aside>
       </div>
+
+      {/* Security ID Card Overlay */}
+      <AnimatePresence>
+        {showSecurityCard && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md"
+            onClick={() => setShowSecurityCard(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-gradient-to-br from-zinc-900 to-black border border-[var(--active-neon)]/30 rounded-3xl p-12 max-w-md w-full mx-4 shadow-[0_0_100px_rgba(0,255,153,0.3)]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center space-y-8">
+                <div className="flex items-center justify-center">
+                  <div className="w-20 h-20 bg-[var(--active-neon)]/10 rounded-full border-2 border-[var(--active-neon)]/50 flex items-center justify-center">
+                    <User className="w-10 h-10 text-[var(--active-neon)]" />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-2xl font-black text-white tracking-[0.1em]">SECURITY ID CARD</h3>
+                  <div className="space-y-3 text-left">
+                    <div className="flex justify-between items-center py-2 border-b border-white/10">
+                      <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Username</span>
+                      <span className="text-[var(--active-neon)] font-black">ORCHIDS_ADMIN</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-white/10">
+                      <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Clearance</span>
+                      <span className="text-red-400 font-black">LEVEL 5 (GOD_MODE)</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2 border-b border-white/10">
+                      <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">System ID</span>
+                      <span className="text-blue-400 font-black">#7782-QX</span>
+                    </div>
+                    <div className="flex justify-between items-center py-2">
+                      <span className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">Status</span>
+                      <span className="text-green-400 font-black">ONLINE & ENCRYPTED</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <button
+                    onClick={() => {
+                      setIsLocked(true);
+                      setShowSecurityCard(false);
+                    }}
+                    className="w-full bg-red-500/20 border border-red-500/50 text-red-400 px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-red-500/30 hover:border-red-500 transition-all"
+                  >
+                    LOCK TERMINAL
+                  </button>
+                  <button
+                    onClick={() => setShowSecurityCard(false)}
+                    className="w-full bg-white/10 border border-white/20 text-zinc-400 px-6 py-3 rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-white/20 hover:text-white transition-all"
+                  >
+                    CLOSE
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Lock Screen Overlay */}
+      <AnimatePresence>
+        {isLocked && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/95 backdrop-blur-2xl"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-gradient-to-br from-zinc-900 to-black border border-red-500/30 rounded-3xl p-12 max-w-md w-full mx-4 shadow-[0_0_100px_rgba(239,68,68,0.3)]"
+            >
+              <div className="text-center space-y-8">
+                <div className="flex items-center justify-center">
+                  <div className="w-20 h-20 bg-red-500/10 rounded-full border-2 border-red-500/50 flex items-center justify-center">
+                    <Lock className="w-10 h-10 text-red-400" />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-3xl font-black text-white tracking-[0.1em]">TERMINAL LOCKED</h3>
+                  <p className="text-zinc-400 text-sm">Enter security passphrase to unlock</p>
+                </div>
+
+                <div className="space-y-4">
+                  <input
+                    type="password"
+                    value={lockPassword}
+                    onChange={(e) => setLockPassword(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleUnlock()}
+                    placeholder="ENTER PASSPHRASE..."
+                    className="w-full bg-black/50 border border-red-500/30 rounded-2xl px-6 py-4 text-center text-red-400 font-black tracking-[0.2em] focus:border-red-500/50 focus:bg-black outline-none transition-all placeholder:text-zinc-600"
+                  />
+                  <button
+                    onClick={handleUnlock}
+                    className="w-full bg-red-500/20 border border-red-500/50 text-red-400 px-6 py-4 rounded-2xl font-black text-sm uppercase tracking-[0.2em] hover:bg-red-500/30 hover:border-red-500 transition-all"
+                  >
+                    UNLOCK TERMINAL
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Decorative OS Accents */}
       <div className="fixed top-0 left-0 w-full h-full pointer-events-none z-50 overflow-hidden">

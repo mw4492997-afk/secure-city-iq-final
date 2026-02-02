@@ -85,6 +85,31 @@ bun dev
 - Emergency lockdown protocols
 - Comprehensive logging and auditing
 
+## User Guide
+
+### Terminal Commands
+
+The application features a command-line style terminal interface for advanced operations. Use the terminal input at the bottom of the right sidebar to execute commands.
+
+#### Basic Commands
+
+- `help` - Display available commands
+- `clear` - Clear the terminal logs
+- `lockdown` - Initiate emergency lockdown protocol
+- `decrypt` - Simulate packet decryption
+- `trace` - Network tracing operations
+- `nodes` - Display node information
+
+#### Secret Commands
+
+These are advanced, undocumented commands that trigger special system behaviors. Use with caution:
+
+- `/OVERRIDE` - Changes the entire UI glow color from Neon Green to 'Alert Red' and plays a warning sound
+- `/RECON` - Triggers a rapid-fire sequence of IP scans on random global targets in the terminal logs
+- `/GHOST` - Sets the UI opacity to 50% to simulate a 'Stealth Mode' for discreet operations
+- `/SUDO_ACCESS` - Displays a scrolling text of 'Decrypted Passwords' in the terminal for visual effect
+- `/SAFE` - Reverts all colors and settings back to the default Green professional mode
+
 ## Contributing
 
 Contributions are welcome! Please read our contributing guidelines before submitting pull requests.
