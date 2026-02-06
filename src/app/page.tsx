@@ -6,8 +6,8 @@ import TerminalLogs from "@/components/TerminalLogs";
 import SecurityPortal from "@/components/SecurityPortal";
 import ThreatMap from "@/components/ThreatMap";
 import { Toaster, toast } from "sonner";
-import { 
-  Shield, Lock, AlertTriangle, CheckCircle, XCircle, 
+import {
+  Shield, Lock, AlertTriangle, CheckCircle, XCircle,
   Loader2, Activity, Globe, Database, Server,
   Terminal, ShieldCheck, Zap, Menu, Bell, User,
   ArrowRight, Search, BarChart3, Radio, Scan,
@@ -16,7 +16,7 @@ import {
   Fingerprint, Cpu, ZapOff, RefreshCcw,
   Maximize2, Crosshair, Map as MapIcon,
   Activity as PulseIcon, ShieldX, TerminalSquare,
-  LockKeyhole, Signal, Binary, DatabaseZap
+  LockKeyhole, Signal, Binary, DatabaseZap, FileText, X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import CyberPulse from "@/components/CyberPulse";
@@ -49,7 +49,17 @@ export default function Home() {
   const [scanTarget, setScanTarget] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
-  const [activeTab, setActiveTab] = useState("dashboard");
+  const [osintResults, setOsintResults] = useState<any>(null);
+  const [isOsintScanning, setIsOsintScanning] = useState(false);
+  const [showLogsModal, setShowLogsModal] = useState(false);
+  const [logsHistory, setLogsHistory] = useState<string[]>([]);
+  const [logsSearch, setLogsSearch] = useState("");
+  const [showAuditLogsModal, setShowAuditLogsModal] = useState(false);
+  const [showKaliToolset, setShowKaliToolset] = useState(false);
+  const [isProcessingTool, setIsProcessingTool] = useState(false);
+  const [liveLogs, setLiveLogs] = useState<string[]>([]);
+  const [isLiveFeedConnected, setIsLiveFeedConnected] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("dashboard");
   const [currentTime, setCurrentTime] = useState(new Date());
   const [headerInfo, setHeaderInfo] = useState("NODE: OSL-CENTRAL // CRYPTO_SECURED");
   const [showSecurityCard, setShowSecurityCard] = useState(false);
@@ -84,10 +94,12 @@ export default function Home() {
 
   const [networkStability, setNetworkStability] = useState<number[]>([]);
 
-  const [nodeLatencies, setNodeLatencies] = useState({
-    '8.8.8.8': 0,
-    '1.1.1.1': 0
-  });
+const [nodeLatencies, setNodeLatencies] = useState({
+  '8.8.8.8': 0,
+  '1.1.1.1': 0
+});
+
+const [testLabMode, setTestLabMode] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -272,6 +284,33 @@ export default function Home() {
       });
   }, [isAuthenticated]);
 
+  // Live logs monitoring
+  useEffect(() => {
+    if (!isAuthenticated || !showAuditLogsModal) return;
+
+    const fetchLiveLogs = async () => {
+      try {
+        const response = await fetch('/api/live-logs');
+        if (response.ok) {
+          const data = await response.json();
+          setLiveLogs(data.logs);
+          setIsLiveFeedConnected(true);
+        }
+      } catch (error) {
+        console.error('Failed to fetch live logs:', error);
+        setIsLiveFeedConnected(false);
+      }
+    };
+
+    // Initial fetch
+    fetchLiveLogs();
+
+    // Poll every 2 seconds
+    const interval = setInterval(fetchLiveLogs, 2000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, showAuditLogsModal]);
+
   const handleAccessGranted = () => {
     setIsAuthenticated(true);
     localStorage.setItem("authenticated", "true");
@@ -361,7 +400,7 @@ export default function Home() {
 
     if (commandText === 'help') {
       setConsoleLogs(prev => [...prev.slice(-15),
-        "COMMAND_LIST: scan, status, clear, lockdown, decrypt, trace, nodes",
+        "COMMAND_LIST: scan, status, clear, lockdown, decrypt, trace, nodes, /scan_user",
         "SECRET_COMMANDS: /OVERRIDE, /RECON, /GHOST, /SUDO_ACCESS, /SAFE"
       ]);
     } else if (commandText === 'clear') {
@@ -419,6 +458,145 @@ export default function Home() {
         }, i * 200);
       });
       toast.warning("SUDO ACCESS GRANTED - Passwords decrypted");
+    } else if (commandText.startsWith('/scan_user ')) {
+      const username = commandText.split(' ')[1];
+      if (!username) {
+        setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] ERROR: Username required. Usage: /scan_user [username]`]);
+        return;
+      }
+
+      // Voice alert
+      if (window.speechSynthesis) {
+        const utterance = new SpeechSynthesisUtterance(`Initializing OSINT search for target ${username}`);
+        utterance.rate = 0.8;
+        utterance.pitch = 0.8;
+        utterance.volume = 0.7;
+        window.speechSynthesis.speak(utterance);
+      }
+
+      setIsOsintScanning(true);
+      setOsintResults(null);
+
+      // Simulate loading logs
+      setConsoleLogs(prev => [...prev.slice(-15),
+        `[${new Date().toLocaleTimeString()}] OSINT_INIT: Starting username analysis for ${username}`,
+        `[${new Date().toLocaleTimeString()}] ACCESSING: Global databases...`,
+        `[${new Date().toLocaleTimeString()}] SCANNING: Social media nodes...`
+      ]);
+
+      // Call OSINT API
+      fetch('/api/osint', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username }),
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) {
+            throw new Error(data.error);
+          }
+
+          setOsintResults(data.results);
+
+          // Add completion logs
+          setConsoleLogs(prev => [...prev.slice(-15),
+            `[${new Date().toLocaleTimeString()}] OSINT_COMPLETE: Analysis finished for ${username}`,
+            `[${new Date().toLocaleTimeString()}] RESULTS: ${data.results.filter((r: any) => r.found).length} platforms found`
+          ]);
+
+          toast.success(`OSINT scan complete. Found on ${data.results.filter((r: any) => r.found).length} platforms.`);
+        })
+        .catch(error => {
+          setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] OSINT_ERROR: ${error.message}`]);
+          toast.error("OSINT scan failed. Check username and try again.");
+        })
+        .finally(() => {
+          setIsOsintScanning(false);
+        });
+    } else if (commandText.startsWith('/nmap_scan ')) {
+      const target = commandText.split(' ')[1];
+      if (!target) {
+        setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] ERROR: Target required. Usage: /nmap_scan [target]`]);
+        return;
+      }
+
+      // Show processing animation
+      setIsProcessingTool(true);
+      setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] PROCESSING...`]);
+
+      // Simulate nmap scan
+      setTimeout(() => {
+        const openPorts = [22, 80, 443, 8080].filter(() => Math.random() > 0.5);
+        const results = openPorts.map(port => `Port ${port}: OPEN - ${port === 22 ? 'SSH' : port === 80 ? 'HTTP' : port === 443 ? 'HTTPS' : 'HTTP-ALT'}`);
+
+        setConsoleLogs(prev => [...prev.slice(-15),
+          `[${new Date().toLocaleTimeString()}] NMAP_SCAN: Starting port scan for ${target}`,
+          ...results,
+          `[${new Date().toLocaleTimeString()}] SCAN_COMPLETE: Found ${openPorts.length} open ports on ${target}`
+        ]);
+
+        setIsProcessingTool(false);
+        toast.success(`Nmap scan complete. ${openPorts.length} open ports found.`);
+      }, 3000);
+    } else if (commandText.startsWith('/dns_lookup ')) {
+      const domain = commandText.split(' ')[1];
+      if (!domain) {
+        setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] ERROR: Domain required. Usage: /dns_lookup [domain]`]);
+        return;
+      }
+
+      // Show processing animation
+      setIsProcessingTool(true);
+      setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] PROCESSING...`]);
+
+      // Simulate DNS lookup
+      setTimeout(() => {
+        const records = [
+          `A: ${domain} -> 192.168.1.1`,
+          `MX: ${domain} -> mail.${domain}`,
+          `NS: ${domain} -> ns1.${domain}`,
+          `TXT: ${domain} -> "v=spf1 -all"`
+        ];
+
+        setConsoleLogs(prev => [...prev.slice(-15),
+          `[${new Date().toLocaleTimeString()}] DNS_LOOKUP: Resolving records for ${domain}`,
+          ...records,
+          `[${new Date().toLocaleTimeString()}] LOOKUP_COMPLETE: DNS enumeration finished for ${domain}`
+        ]);
+
+        setIsProcessingTool(false);
+        toast.success(`DNS lookup complete for ${domain}.`);
+      }, 2500);
+    } else if (commandText.startsWith('/vuln_scan ')) {
+      const target = commandText.split(' ')[1];
+      if (!target) {
+        setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] ERROR: Target required. Usage: /vuln_scan [target]`]);
+        return;
+      }
+
+      // Show processing animation
+      setIsProcessingTool(true);
+      setConsoleLogs(prev => [...prev.slice(-15), `[${new Date().toLocaleTimeString()}] PROCESSING...`]);
+
+      // Simulate vulnerability scan
+      setTimeout(() => {
+        const vulnerabilities = [
+          'CVE-2023-1234: Remote Code Execution - HIGH',
+          'CVE-2023-5678: SQL Injection - MEDIUM',
+          'CVE-2023-9012: XSS Vulnerability - LOW'
+        ].filter(() => Math.random() > 0.6);
+
+        setConsoleLogs(prev => [...prev.slice(-15),
+          `[${new Date().toLocaleTimeString()}] VULN_SCAN: Starting vulnerability assessment for ${target}`,
+          ...vulnerabilities,
+          `[${new Date().toLocaleTimeString()}] SCAN_COMPLETE: Found ${vulnerabilities.length} vulnerabilities on ${target}`
+        ]);
+
+        setIsProcessingTool(false);
+        toast.success(`Vulnerability scan complete. ${vulnerabilities.length} issues found.`);
+      }, 4000);
     } else if (commandText === '/safe') {
       setIsAlertMode(false);
       setIsStealthMode(false);
@@ -497,6 +675,57 @@ export default function Home() {
     } else {
       toast.error("Invalid passphrase. Access denied.");
     }
+  };
+
+  const handleLaunchSimulatedAttack = () => {
+    if (!testLabMode) {
+      toast.error("Test Lab mode must be enabled first.");
+      return;
+    }
+
+    toast.info("LAUNCHING SIMULATED ATTACK SEQUENCE...");
+
+    // Simulate Brute Force attack
+    const bruteForceIPs = ['192.168.1.100', '10.0.0.50', '172.16.0.25'];
+    const sqlInjectionPayloads = ["' OR '1'='1", "admin'--", "'; DROP TABLE users;--"];
+
+    let attackIndex = 0;
+    const totalAttacks = 10;
+
+    const simulateAttack = () => {
+      if (attackIndex >= totalAttacks) {
+        // Assessment complete
+        setConsoleLogs(prev => [...prev.slice(-15),
+          `[${new Date().toLocaleTimeString()}] [TEST_MODE] VULNERABILITY ASSESSMENT COMPLETE: SYSTEM SECURE`,
+          `[${new Date().toLocaleTimeString()}] [TEST_MODE] All simulated threats neutralized successfully.`
+        ]);
+        toast.success("VULNERABILITY ASSESSMENT COMPLETE: SYSTEM SECURE");
+        return;
+      }
+
+      const isBruteForce = Math.random() > 0.5;
+      const ip = bruteForceIPs[Math.floor(Math.random() * bruteForceIPs.length)];
+      const type = isBruteForce ? 'Brute Force' : 'SQL Injection';
+      const payload = isBruteForce ? 'Attempting password crack' : sqlInjectionPayloads[Math.floor(Math.random() * sqlInjectionPayloads.length)];
+
+      // Display incoming malicious packet
+      setConsoleLogs(prev => [...prev.slice(-15),
+        `[${new Date().toLocaleTimeString()}] [TEST_MODE] INCOMING MALICIOUS PACKET: ${type} from ${ip}`,
+        `[${new Date().toLocaleTimeString()}] [TEST_MODE] PAYLOAD: ${payload}`
+      ]);
+
+      // Simulate firewall block
+      setTimeout(() => {
+        setConsoleLogs(prev => [...prev.slice(-15),
+          `[${new Date().toLocaleTimeString()}] [TEST_MODE] FIREWALL_BLOCK: ${type} from ${ip} - Threat neutralized`
+        ]);
+        setFirewallBlocks(prev => prev + 1);
+        attackIndex++;
+        setTimeout(simulateAttack, 1500); // Next attack in 1.5 seconds
+      }, 500);
+    };
+
+    simulateAttack();
   };
 
   if (!isAuthenticated) {
@@ -581,6 +810,23 @@ export default function Home() {
             <span className="text-[10px] text-zinc-500 font-black tracking-widest uppercase">UPTIME</span>
             <span className="text-xs font-black text-white">{systemStats.uptime}</span>
           </div>
+          <button
+            onClick={() => {
+              setShowLogsModal(true);
+              // Voice alert
+              if (window.speechSynthesis) {
+                const utterance = new SpeechSynthesisUtterance('Opening system execution logs. Secure City IQ history loaded.');
+                utterance.rate = 0.8;
+                utterance.pitch = 0.8;
+                utterance.volume = 0.7;
+                window.speechSynthesis.speak(utterance);
+              }
+            }}
+            className="relative w-11 h-11 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center transition-all group"
+            title="View System Logs"
+          >
+            <FileText className="w-5 h-5 text-zinc-400 group-hover:text-[var(--active-neon)]" />
+          </button>
           <button className="relative w-11 h-11 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl flex items-center justify-center transition-all group">
             <Bell className="w-5 h-5 text-zinc-400 group-hover:text-white" />
             <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black animate-ping" />
@@ -624,9 +870,32 @@ export default function Home() {
               </h3>
               <div className="space-y-1.5">
                 <MenuLink icon={<ShieldAlert className="w-4 h-4" />} label="Active Firewall" onClick={() => setActiveTab('firewall')} />
+                <MenuLink icon={<FileText className="w-4 h-4" />} label="SYSTEM AUDIT LOGS" onClick={() => {
+                  setShowAuditLogsModal(true);
+                  // Voice alert
+                  if (window.speechSynthesis) {
+                    const utterance = new SpeechSynthesisUtterance('Loading central archive. Accessing Secure City IQ audit trails.');
+                    utterance.rate = 0.8;
+                    utterance.pitch = 0.8;
+                    utterance.volume = 0.7;
+                    window.speechSynthesis.speak(utterance);
+                  }
+                }} />
+                <MenuLink icon={<Terminal className="w-4 h-4" />} label="KALI TOOLSET" onClick={() => {
+                  setShowKaliToolset(true);
+                  // Voice alert
+                  if (window.speechSynthesis) {
+                    const utterance = new SpeechSynthesisUtterance('Accessing Kali Toolset Archive');
+                    utterance.rate = 0.8;
+                    utterance.pitch = 0.8;
+                    utterance.volume = 0.7;
+                    window.speechSynthesis.speak(utterance);
+                  }
+                }} />
                 <MenuLink icon={<Scan className="w-4 h-4" />} label="Vulnerability Scan" onClick={() => setActiveTab('scan')} />
                 <MenuLink icon={<Key className="w-4 h-4" />} label="Keys & Vaults" onClick={() => setActiveTab('vaults')} />
                 <MenuLink icon={<Fingerprint className="w-4 h-4" />} label="Biometric Logs" onClick={() => setActiveTab('biometric')} />
+                <MenuLink icon={<Zap className="w-4 h-4" />} label="LAUNCH SIMULATED ATTACK" onClick={() => handleLaunchSimulatedAttack()} />
               </div>
             </div>
 
@@ -711,7 +980,7 @@ export default function Home() {
               <div className="absolute bottom-10 right-10 w-24 h-24 border-b-[3px] border-r-[3px] border-[var(--active-neon)]/40 rounded-br-3xl" />
 
               <div className="relative z-10 p-20 h-full flex flex-col justify-center max-w-3xl space-y-8">
-                <motion.div 
+                <motion.div
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.5 }}
@@ -719,6 +988,16 @@ export default function Home() {
                 >
                   <PulseIcon className="w-4 h-4 text-[var(--active-neon)] animate-pulse" />
                   Live Operational Grid: ALPHA-NODE ACTIVE
+                  <button
+                    onClick={() => setTestLabMode(!testLabMode)}
+                    className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest transition-all ${
+                      testLabMode
+                        ? 'bg-red-500/20 border border-red-500/50 text-red-400'
+                        : 'bg-[var(--active-neon)]/20 border border-[var(--active-neon)]/50 text-[var(--active-neon)]'
+                    }`}
+                  >
+                    {testLabMode ? 'TEST LAB: ON' : 'TEST LAB: OFF'}
+                  </button>
                 </motion.div>
                 
                 <h2 className="text-8xl md:text-9xl font-black text-white tracking-[-0.07em] leading-[0.85]">
@@ -1233,7 +1512,13 @@ export default function Home() {
           </div>
           
           <div className="flex-1 overflow-hidden relative">
-            <TerminalLogs logs={consoleLogs} onEmergency={handleActivateLockdown} />
+            <TerminalLogs
+              logs={consoleLogs}
+              onEmergency={handleActivateLockdown}
+              osintResults={osintResults}
+              isScanning={isOsintScanning}
+              isProcessingTool={isProcessingTool}
+            />
             <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black to-transparent pointer-events-none" />
           </div>
 
@@ -1393,6 +1678,326 @@ export default function Home() {
         <div className="absolute bottom-12 left-12 w-24 h-24 border-b-2 border-l-2 border-white/5 rounded-bl-[3rem]" />
         <div className="absolute bottom-12 right-12 w-24 h-24 border-b-2 border-r-2 border-white/5 rounded-br-[3rem]" />
       </div>
+
+      {/* OSINT Scanning Overlay */}
+      <AnimatePresence>
+        {isOsintScanning && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center bg-black/90 backdrop-blur-2xl"
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-gradient-to-br from-zinc-900/80 to-black/80 border border-[var(--active-neon)]/30 rounded-3xl p-12 max-w-md w-full mx-4 shadow-[0_0_100px_rgba(0,255,153,0.3)] backdrop-blur-xl"
+            >
+              <div className="text-center space-y-8">
+                <div className="flex items-center justify-center">
+                  <div className="w-20 h-20 bg-[var(--active-neon)]/10 rounded-full border-2 border-[var(--active-neon)]/50 flex items-center justify-center">
+                    <Search className="w-10 h-10 text-[var(--active-neon)] animate-pulse" />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-3xl font-black text-white tracking-[0.1em]">OSINT SCANNING</h3>
+                  <p className="text-zinc-400 text-sm">Analyzing username across global platforms</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <div className="w-32 h-2 bg-zinc-800 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full bg-[var(--active-neon)] rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: '100%' }}
+                        transition={{ duration: 3, ease: "easeInOut" }}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-[var(--active-neon)] font-mono text-sm animate-pulse">
+                      ACCESSING GLOBAL DATABASES...
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Audit Logs Modal */}
+      <AnimatePresence>
+        {showAuditLogsModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-2xl"
+            onClick={() => setShowAuditLogsModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-gradient-to-br from-zinc-900/80 to-black/80 border border-[var(--active-neon)]/30 rounded-3xl p-12 max-w-4xl w-full mx-4 shadow-[0_0_100px_rgba(0,255,153,0.3)] backdrop-blur-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-4 bg-[var(--active-neon)]/10 rounded-2xl border border-[var(--active-neon)]/20">
+                      <FileText className="w-8 h-8 text-[var(--active-neon)]" />
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-black text-white tracking-[0.1em]">SYSTEM AUDIT LOGS</h3>
+                      <p className="text-zinc-400 text-sm">Central archive of all system activities and commands</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowAuditLogsModal(false)}
+                    className="p-3 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-2xl border border-zinc-600/50 transition-all"
+                  >
+                    <X className="w-6 h-6 text-zinc-400" />
+                  </button>
+                </div>
+
+                {/* Live Feed Status */}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className={`w-2 h-2 rounded-full ${isLiveFeedConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                  <span className="text-[10px] text-zinc-400 uppercase font-black tracking-widest">
+                    {isLiveFeedConnected ? 'LIVE FEED CONNECTED - MONITORING ALL INCOMING TRAFFIC' : 'LIVE FEED DISCONNECTED'}
+                  </span>
+                </div>
+
+                <div className="max-h-96 overflow-y-auto bg-black/50 rounded-2xl border border-zinc-700/50 p-6 custom-scrollbar">
+                  <div className="space-y-3 font-mono text-sm">
+                    {liveLogs.length > 0 ? (
+                      liveLogs.slice().reverse().map((log, index) => {
+                        const isThreat = log.includes('DDOS_THREAT');
+                        const isIntrusion = log.includes('INTRUSION_ATTEMPT');
+                        return (
+                          <div
+                            key={index}
+                            className={`flex items-start gap-4 p-3 rounded-lg border transition-all ${
+                              isThreat
+                                ? 'bg-red-500/10 border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.3)] animate-pulse'
+                                : isIntrusion
+                                ? 'bg-yellow-500/10 border-yellow-500/30'
+                                : 'bg-zinc-900/30 border-zinc-800/30'
+                            }`}
+                          >
+                            <div className={`font-bold min-w-[120px] ${
+                              isThreat ? 'text-red-400' : 'text-[var(--active-neon)]'
+                            }`}>
+                              {log.match(/\[([^\]]+)\]/)?.[1] || 'N/A'}
+                            </div>
+                            <div className={`flex-1 ${
+                              isThreat ? 'text-red-300' : 'text-zinc-300'
+                            }`}>
+                              {log.replace(/\[([^\]]+)\]\s*/, '')}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="text-center text-zinc-500 py-8">
+                        {isLiveFeedConnected ? 'Waiting for live traffic...' : 'No live logs available'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <div className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">
+                    Total Entries: {consoleLogs.length}
+                  </div>
+                  <button
+                    onClick={() => {
+                      const logData = consoleLogs.map(log => log).join('\n');
+                      const blob = new Blob([logData], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `secure_city_iq_audit_logs_${new Date().toISOString().split('T')[0]}.txt`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="px-8 py-3 bg-[var(--active-neon)] text-black font-black text-sm uppercase tracking-[0.2em] rounded-2xl hover:bg-white hover:text-black transition-all"
+                  >
+                    DOWNLOAD LOGS
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* KALI TOOLSET Modal */}
+      <AnimatePresence>
+        {showKaliToolset && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-2xl"
+            onClick={() => setShowKaliToolset(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.8, opacity: 0 }}
+              className="bg-gradient-to-br from-zinc-900/80 to-black/80 border border-[var(--active-neon)]/30 rounded-3xl p-12 max-w-2xl w-full mx-4 shadow-[0_0_100px_rgba(0,255,153,0.3)] backdrop-blur-xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="space-y-8">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-4 bg-[var(--active-neon)]/10 rounded-2xl border border-[var(--active-neon)]/20">
+                      <Terminal className="w-8 h-8 text-[var(--active-neon)]" />
+                    </div>
+                    <div>
+                      <h3 className="text-3xl font-black text-white tracking-[0.1em]">KALI TOOLSET</h3>
+                      <p className="text-zinc-400 text-sm">Advanced penetration testing and reconnaissance tools</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowKaliToolset(false)}
+                    className="p-3 bg-zinc-800/50 hover:bg-zinc-700/50 rounded-2xl border border-zinc-600/50 transition-all"
+                  >
+                    <X className="w-6 h-6 text-zinc-400" />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* OSINT Tracker */}
+                  <div
+                    onClick={() => {
+                      setCommand('/scan_user ');
+                      setShowKaliToolset(false);
+                      if (window.speechSynthesis) {
+                        const utterance = new SpeechSynthesisUtterance('OSINT Tracker activated. Enter username to scan.');
+                        utterance.rate = 0.8;
+                        utterance.pitch = 0.8;
+                        utterance.volume = 0.7;
+                        window.speechSynthesis.speak(utterance);
+                      }
+                    }}
+                    className="group cursor-pointer p-6 bg-[var(--active-neon)]/5 border border-[var(--active-neon)]/20 rounded-2xl hover:bg-[var(--active-neon)]/10 hover:border-[var(--active-neon)]/40 transition-all hover:shadow-[0_0_30px_rgba(0,255,153,0.2)]"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 bg-[var(--active-neon)]/10 rounded-xl border border-[var(--active-neon)]/20">
+                        <Search className="w-6 h-6 text-[var(--active-neon)]" />
+                      </div>
+                      <div className="px-3 py-1 bg-[var(--active-neon)]/20 border border-[var(--active-neon)]/30 rounded-full">
+                        <span className="text-[10px] text-[var(--active-neon)] font-black uppercase tracking-widest">ACTIVE</span>
+                      </div>
+                    </div>
+                    <h4 className="text-lg font-black text-white mb-2">OSINT Tracker</h4>
+                    <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">Username reconnaissance across social platforms</p>
+                  </div>
+
+                  {/* Network Mapper */}
+                  <div
+                    onClick={() => {
+                      setCommand('/nmap_scan ');
+                      setShowKaliToolset(false);
+                      setIsProcessingTool(true);
+                      if (window.speechSynthesis) {
+                        const utterance = new SpeechSynthesisUtterance('Network Mapper activated. Enter target IP or domain.');
+                        utterance.rate = 0.8;
+                        utterance.pitch = 0.8;
+                        utterance.volume = 0.7;
+                        window.speechSynthesis.speak(utterance);
+                      }
+                    }}
+                    className="group cursor-pointer p-6 bg-[var(--active-neon)]/5 border border-[var(--active-neon)]/20 rounded-2xl hover:bg-[var(--active-neon)]/10 hover:border-[var(--active-neon)]/40 transition-all hover:shadow-[0_0_30px_rgba(0,255,153,0.2)]"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 bg-[var(--active-neon)]/10 rounded-xl border border-[var(--active-neon)]/20">
+                        <Network className="w-6 h-6 text-[var(--active-neon)]" />
+                      </div>
+                      <div className="px-3 py-1 bg-[var(--active-neon)]/20 border border-[var(--active-neon)]/30 rounded-full">
+                        <span className="text-[10px] text-[var(--active-neon)] font-black uppercase tracking-widest">ACTIVE</span>
+                      </div>
+                    </div>
+                    <h4 className="text-lg font-black text-white mb-2">Network Mapper (Nmap)</h4>
+                    <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">Port scanning and network discovery</p>
+                  </div>
+
+                  {/* Vulnerability Scanner */}
+                  <div
+                    onClick={() => {
+                      setCommand('/vuln_scan ');
+                      setShowKaliToolset(false);
+                      setIsProcessingTool(true);
+                      if (window.speechSynthesis) {
+                        const utterance = new SpeechSynthesisUtterance('Vulnerability Scanner activated. Enter target to analyze.');
+                        utterance.rate = 0.8;
+                        utterance.pitch = 0.8;
+                        utterance.volume = 0.7;
+                        window.speechSynthesis.speak(utterance);
+                      }
+                    }}
+                    className="group cursor-pointer p-6 bg-[var(--active-neon)]/5 border border-[var(--active-neon)]/20 rounded-2xl hover:bg-[var(--active-neon)]/10 hover:border-[var(--active-neon)]/40 transition-all hover:shadow-[0_0_30px_rgba(0,255,153,0.2)]"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 bg-[var(--active-neon)]/10 rounded-xl border border-[var(--active-neon)]/20">
+                        <ShieldAlert className="w-6 h-6 text-[var(--active-neon)]" />
+                      </div>
+                      <div className="px-3 py-1 bg-[var(--active-neon)]/20 border border-[var(--active-neon)]/30 rounded-full">
+                        <span className="text-[10px] text-[var(--active-neon)] font-black uppercase tracking-widest">ACTIVE</span>
+                      </div>
+                    </div>
+                    <h4 className="text-lg font-black text-white mb-2">Vulnerability Scanner</h4>
+                    <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">Automated security assessment</p>
+                  </div>
+
+                  {/* DNS Recon */}
+                  <div
+                    onClick={() => {
+                      setCommand('/dns_lookup ');
+                      setShowKaliToolset(false);
+                      setIsProcessingTool(true);
+                      if (window.speechSynthesis) {
+                        const utterance = new SpeechSynthesisUtterance('DNS Reconnaissance activated. Enter domain to investigate.');
+                        utterance.rate = 0.8;
+                        utterance.pitch = 0.8;
+                        utterance.volume = 0.7;
+                        window.speechSynthesis.speak(utterance);
+                      }
+                    }}
+                    className="group cursor-pointer p-6 bg-[var(--active-neon)]/5 border border-[var(--active-neon)]/20 rounded-2xl hover:bg-[var(--active-neon)]/10 hover:border-[var(--active-neon)]/40 transition-all hover:shadow-[0_0_30px_rgba(0,255,153,0.2)]"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="p-3 bg-[var(--active-neon)]/10 rounded-xl border border-[var(--active-neon)]/20">
+                        <Globe className="w-6 h-6 text-[var(--active-neon)]" />
+                      </div>
+                      <div className="px-3 py-1 bg-[var(--active-neon)]/20 border border-[var(--active-neon)]/30 rounded-full">
+                        <span className="text-[10px] text-[var(--active-neon)] font-black uppercase tracking-widest">ACTIVE</span>
+                      </div>
+                    </div>
+                    <h4 className="text-lg font-black text-white mb-2">DNS Recon</h4>
+                    <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-widest">Domain enumeration and DNS analysis</p>
+                  </div>
+                </div>
+
+                <div className="text-center">
+                  <p className="text-[10px] text-zinc-500 uppercase font-black tracking-widest">
+                    Click any tool to auto-fill command in terminal
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
