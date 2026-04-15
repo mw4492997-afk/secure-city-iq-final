@@ -34,3 +34,7 @@ pytest>=9.0.2
 # Additional dependencies for Render compatibility
 gunicorn>=21.2.0
 Werkzeug>=3.0.0
+
+# Firebase
+firebase-admin>=6.5.0
+
