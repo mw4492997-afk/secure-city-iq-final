@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SECURE CITY IQ | CORE ACCESS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-cyan: #00f2ff;
+            --neon-pink: #bc13fe;
+            --glass: rgba(255, 255, 255, 0.03);
+            --border-glow: rgba(0, 242, 255, 0.4);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #02050a;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        /* تأثير الخلفية الرقمية العميقة */
+        .bg-layer {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #001a33 0%, #000 100%);
+            z-index: -2;
+        }
+
+        .grid-overlay {
+            position: absolute;
+            width: 200%; height: 200%;
+            background-image: 
+                linear-gradient(var(--border-glow) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-glow) 1px, transparent 1px);
+            background-size: 50px 50px;
+            transform: rotateX(60deg) translateY(-20%);
+            opacity: 0.15;
+            animation: grid-move 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes grid-move {
+            from { transform: rotateX(60deg) translateY(0); }
+            to { transform: rotateX(60deg) translateY(-50px); }
+        }
+
+        /* تأثير الوهج الكوني المتحرك */
+        .blob {
+            position: absolute;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(188, 19, 254, 0.1) 0%, transparent 70%);
+            filter: blur(50px);
+            border-radius: 50%;
+            z-index: -1;
+            animation: blob-float 15s ease-in-out infinite;
+        }
+
+        @keyframes blob-float {
+            0%, 100% { transform: translate(-20%, -20%); }
+            50% { transform: translate(20%, 20%); }
+        }
+
+        /* كارد تسجيل الدخول الاحترافي */
+        .auth-container {
+            position: relative;
+            width: 450px;
+            padding: 60px 40px;
+            background: var(--glass);
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(0, 242, 255, 0.3);
+            border-radius: 24px;
+            box-shadow: 
+                0 0 50px rgba(0, 0, 0, 0.8),
+                inset 0 0 30px rgba(0, 242, 255, 0.05);
+            text-align: center;
+            transition: 0.5s ease;
+        }
+
+        .auth-container::before {
+            content: "";
+            position: absolute;
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, var(--neon-cyan), transparent, var(--neon-pink));
+            border-radius: 26px;
+            z-index: -1;
+            opacity: 0.3;
+        }
+
+        .system-header h1 {
+            font-size: 24px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 6px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        .status-bar {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--neon-cyan);
+            font-size: 10px;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* حقول الإدخال */
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 30px;
+        }
+        .input-wrapper input {
+            width: 100%;
+            padding: 16px 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(0, 242, 255, 0.2);
+            border-radius: 12px;
+            color: #fff;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 16px;
+            outline: none;
+            transition: 0.3s;
+        }
+
+        .input-wrapper input:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 242, 255, 0.3);
+            background: rgba(0, 242, 255, 0.05);
+        }
+
+        .input-wrapper span {
+            position: absolute;
+            right: 15px; top: -10px;
+            background: #02050a;
+            padding: 0 8px;
+            color: var(--neon-cyan);
+            font-size: 10px;
+            letter-spacing: 1px;
+        }
+
+        /* الزر الرئيسي */
+        .login-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(45deg, #00d2ff, #3a7bd5);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-weight: 900;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 14px;
+            letter-spacing: 3px;
+            cursor: pointer;
+            transition: 0.4s;
+            box-shadow: 0 10px 30px rgba(0, 210, 255, 0.4);
+            text-transform: uppercase;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 0 40px var(--neon-cyan);
+            letter-spacing: 5px;
+        }
+
+        /* أيقونة البصمة المتحركة */
+        .security-icon {
+            margin-top: 40px;
+            cursor: pointer;
+        }
+
+        .security-icon svg {
+            width: 60px;
+            fill: var(--neon-pink);
+            filter: drop-shadow(0 0 10px var(--neon-pink));
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+
+        .footer-info {
+            margin-top: 30px;
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.2);
+            letter-spacing: 2px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-layer"></div>
+    <div class="grid-overlay"></div>
+    <div class="blob"></div>
+
+    <div class="auth-container">
+        <div class="system-header">
+            <h1>SECURE CITY IQ</h1>
+            <div class="status-bar">► SYSTEM STATUS: SECURED • NODE_01</div>
+        </div>
+
+        <form action="/login" method="POST">
+            <div class="input-wrapper">
+                <span>IDENTITY</span>
+                <input type="text" name="username" placeholder="ENTER ACCESS_ID" required autocomplete="off">
+            </div>
+            
+            <div class="input-wrapper">
+                <span>ENCRYPTION</span>
+                <input type="password" name="password" placeholder="ENTER SECURITY_KEY" required>
+            </div>
+
+            <button type="submit" class="login-btn">AUTHORIZE ACCESS</button>
+        </form>
+
+        <div class="security-icon">
+            <svg viewBox="0 0 512 512"><path d="M256 0C114.6 0 0 114.6 0 256s114.6 256 256 256 256-114.6 256-256S397.4 0 256 0zm0 464c-114.7 0-208-93.3-208-208S141.3 48 256 48s208 93.3 208 208-93.3 208-208 208z"/></svg>
+        </div>
+
+        <div class="footer-info">
+            ENCRYPTED CONNECTION • PORT_7700 • © 2026
+        </div>
+    </div>
+
+</body>
+</html>
