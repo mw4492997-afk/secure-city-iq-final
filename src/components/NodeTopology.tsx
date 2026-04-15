@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getLocalIP, getSubnet } from '@/lib/networkUtils';
+
 
 const CYBER_RED = '#ef4444';
 const RED_GLOW = 'url(#redGlow)';
@@ -13,7 +13,29 @@ const NodeTopology = () => {
   const [localIP, setLocalIP] = useState('');
   const intervalRef = useRef(null);
 
-  const scanSubnet = useCallback(async (rangeStart, rangeEnd) => {
+async function getLocalIP() {
+  return new Promise((resolve) => {
+    const rtc = new RTCPeerConnection({ iceServers: [] });
+    rtc.createDataChannel('');
+    rtc.onicecandidate = (evt) => {
+      if (evt.candidate) {
+        const ipMatch = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(evt.candidate.candidate);
+        if (ipMatch && (ipMatch[1].startsWith('192.168.') || ipMatch[1].startsWith('10.') || ipMatch[1].startsWith('172.1'))) {
+          rtc.close();
+          resolve(ipMatch[1]);
+        }
+      }
+    };
+    rtc.createOffer().then(rtc.setLocalDescription.bind(rtc));
+  });
+}
+
+function getSubnet(ip) {
+  const parts = ip.split('.');
+  return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
+}
+
+const scanSubnet = useCallback(async (rangeStart, rangeEnd) => {
     const results = [];
     const scanPromises = [];
 
@@ -25,10 +47,10 @@ const NodeTopology = () => {
           cache: 'no-cache',
           keepalive: true 
         }).then(async (res) => {
-          const timing = performance.now(); // Detect via timing/response metadata
+          const timing = performance.now();
           return {
             ip: targetIP,
-            status: 'alive', // no-cors shows opaque but timing indicates response
+            status: 'alive',
             latency: Math.round(timing),
             lastSeen: new Date().toISOString(),
             mac: `00:1B:${Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()}:${Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()}:${Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()}`,
@@ -38,8 +60,15 @@ const NodeTopology = () => {
       );
     }
 
-    const scanned = (await Promise.all(scanPromises)).filter(Boolean);
-    return scanned;
+    const scanned = (await Promise.allSettled(scanPromises)).filter(r => r.status === 'fulfilled' && r.value !== null).map(r => r.value);
+    return scanned || Array.from({length: 8}, (_, i) => ({
+      ip: `${subnet.split('/')[0].split('.').slice(0,3).join('.')}.${1+i}`,
+      status: 'fallback',
+      latency: Math.floor(Math.random()*100),
+      lastSeen: new Date().toISOString(),
+      mac: 'DE:AD:BE:EF:00:0' + i,
+      vendor: 'Fallback Device'
+    }));
   }, [subnet]);
 
   const performScan = useCallback(async () => {
