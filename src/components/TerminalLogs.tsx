@@ -18,12 +18,26 @@ interface TerminalLogsProps {
 export default function TerminalLogs({ logs = [], onEmergency, osintResults, isScanning, isProcessingTool }: TerminalLogsProps) {
   return (
     <div className="flex-1 bg-black border border-green-400/50 rounded-lg p-4 overflow-hidden">
-      <div className="h-full overflow-y-auto">
-        {logs.map((log, index) => (
-          <div key={index} className="mb-2 text-green-400 font-mono text-sm">
-            <pre className="whitespace-pre-wrap">{log}</pre>
-          </div>
-        ))}
+      <div className="h-full overflow-y-auto scroll-mt-10 scrollbar-thin scrollbar-thumb-green-400 scrollbar-track-black" ref={(el) => {
+        if (el) el.scrollTop = el.scrollHeight;
+      }}>
+{logs.map((log, index) => {
+            const timeMatch = log.match(/\[([0-9]{1,2}:[0-9]{2}:[0-9]{2})\]/);
+            const time = timeMatch ? timeMatch[1] : new Date().toLocaleTimeString('en-US', {hour12: false}).slice(11, 19);
+            const content = log.replace(/^\[[^\]]+\]\s*/, '');
+            
+            let colorClass = 'text-green-400';
+            if (content.includes('NETWORK_SCAN') || content.includes('Identified')) colorClass = 'text-green-400';
+            else if (content.includes('Uptime') || content.includes('Firewall')) colorClass = 'text-cyan-400';
+            else if (content.includes('anomaly') || content.includes('threat') || content.includes('ERROR')) colorClass = 'text-red-400';
+            else if (content.includes('new device') || content.includes('detected')) colorClass = 'text-yellow-400';
+            
+            return (
+              <div key={index} className={`mb-2 font-mono text-sm ${colorClass}`}>
+                <pre className="whitespace-pre-wrap">[{time}] {content}</pre>
+              </div>
+            );
+          })}
 
         {/* OSINT Scanning Progress */}
         {isScanning && (

@@ -266,7 +266,12 @@ const [testLabMode, setTestLabMode] = useState(false);
         "AI_SENTINEL: Pattern matching complete. No anomalies.",
         "KERNEL: Memory allocation optimized for threat analysis"
       ];
-      const newLog = `[${new Date().toLocaleTimeString()}] ${logs[Math.floor(Math.random() * logs.length)]}`;
+      const timestamp = new Date().toLocaleTimeString('en-US', {hour12: false}).slice(11, 19);
+      const newLog = `[${timestamp}] ${logs[Math.floor(Math.random() * logs.length)]}`;
+      if (Math.random() > 0.7) {
+        const ip = `192.168.1.${Math.floor(Math.random() * 254 + 1)}`;
+        newLog = `[${timestamp}] NETWORK_SCAN: Identified ${ip} as active node`;
+      }
       setConsoleLogs(prev => [...prev.slice(-25), newLog]);
     }, 3500);
     return () => clearInterval(interval);
