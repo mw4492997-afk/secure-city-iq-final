@@ -4,30 +4,37 @@ import { NextRequest, NextResponse } from 'next/server';
 let nodeIPs: string[] = [];
 
 export async function POST(request: NextRequest) {
+  const headers = new Headers();
+  headers.append('Access-Control-Allow-Origin', '*');
+  headers.append('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  headers.append('Access-Control-Allow-Headers', 'Content-Type');
+
   try {
     const body = await request.json();
-    const { ips } = body;
-    
-    if (!Array.isArray(ips)) {
-      return NextResponse.json({ error: 'ips must be an array of strings' }, { status: 400 });
-    }
-
-    nodeIPs = ips.filter(ip => typeof ip === 'string' && ip.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/));
-    
-    console.log(`📱 Phone updated ${nodeIPs.length} nodes:`, nodeIPs);
-    
-    return NextResponse.json({
-      success: true,
-      updated: nodeIPs.length,
-      nodes: nodeIPs
-    });
+    nodeIPs = body.ips || body || []; // Super simple: accept ips or anything
+    console.log(`📱 Phone data:`, nodeIPs);
+    return NextResponse.json({ success: true, nodes: nodeIPs }, { headers });
   } catch (error) {
-    console.error('Update nodes error:', error);
-    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
+    console.error('POST error:', error);
+    return NextResponse.json({ error: 'Failed', received: await request.text() }, { 
+      status: 400, 
+      headers 
+    });
   }
 }
 
-export async function GET() {
+export async function OPTIONS() {
+  const headers = new Headers();
+  headers.append('Access-Control-Allow-Origin', '*');
+  headers.append('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  headers.append('Access-Control-Allow-Headers', 'Content-Type');
+  return new NextResponse(null, { status: 200, headers });
+}
+
+export async function GET(request: NextRequest) {
+  const headers = new Headers();
+  headers.append('Access-Control-Allow-Origin', '*');
+  
   const devices = nodeIPs.map(ip => ({
     ip,
     status: 'phone-reported' as const,
@@ -41,5 +48,5 @@ export async function GET() {
     devices,
     count: devices.length,
     timestamp: new Date().toISOString()
-  });
+  }, { headers });
 }

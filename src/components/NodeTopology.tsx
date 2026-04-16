@@ -19,8 +19,10 @@ const fetchNodes = useCallback(async () => {
       const response = await fetch('/api/update-nodes');
       if (!response.ok) throw new Error('API error');
       const data = await response.json();
-      setDevices(data.devices || []);
-      console.log('📱 Nodes from phone:', data.devices?.length || 0);
+      console.log('📱 Raw API data:', data);
+      const nodeList = data.devices || data.ips || data.nodes || data || [];
+      setDevices(Array.isArray(nodeList) ? nodeList.map(ip => typeof ip === 'string' ? {ip, status: 'phone', latency: 0, mac: 'PHONE', vendor: 'Mobile'} : ip) : []);
+      console.log('📱 Processed devices:', nodeList.length);
     } catch (err) {
       console.error('Node fetch error:', err);
       setDevices([]); // Show empty if no phone data yet
