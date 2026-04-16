@@ -13,106 +13,29 @@ const NodeTopology = () => {
   const [localIP, setLocalIP] = useState('');
   const intervalRef = useRef(null);
 
-async function getLocalIP() {
-  return new Promise((resolve) => {
-    const rtc = new RTCPeerConnection({ iceServers: [] });
-    rtc.createDataChannel('');
-    rtc.onicecandidate = (evt) => {
-      if (evt.candidate) {
-        const ipMatch = /([0-9]{1,3}(\.[0-9]{1,3}){3})/.exec(evt.candidate.candidate);
-        if (ipMatch && (ipMatch[1].startsWith('192.168.') || ipMatch[1].startsWith('10.') || ipMatch[1].startsWith('172.1'))) {
-          rtc.close();
-          resolve(ipMatch[1]);
-        }
-      }
-    };
-    rtc.createOffer().then(rtc.setLocalDescription.bind(rtc));
-  });
-}
-
-function getSubnet(ip) {
-  const parts = ip.split('.');
-  return `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
-}
-
-const scanSubnet = useCallback(async (rangeStart, rangeEnd) => {
-    const results = [];
-    const scanPromises = [];
-
-    for (let i = rangeStart; i <= rangeEnd; i++) {
-      const targetIP = `${subnet.split('/')[0].split('.').slice(0,3).join('.')}.${i}`;
-      scanPromises.push(
-        fetch(`http://${targetIP}`, { 
-          mode: 'no-cors', 
-          cache: 'no-cache',
-          keepalive: true 
-        }).then(async (res) => {
-          const timing = performance.now();
-          return {
-            ip: targetIP,
-            status: 'alive',
-            latency: Math.round(timing),
-            lastSeen: new Date().toISOString(),
-            mac: `00:1B:${Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()}:${Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()}:${Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()}`,
-            vendor: 'Detected Device'
-          };
-        }).catch(() => null)
-      );
-    }
-
-    const scanned = (await Promise.allSettled(scanPromises)).filter(r => r.status === 'fulfilled' && r.value !== null).map(r => r.value);
-    return scanned || Array.from({length: 8}, (_, i) => ({
-      ip: `${subnet.split('/')[0].split('.').slice(0,3).join('.')}.${1+i}`,
-      status: 'fallback',
-      latency: Math.floor(Math.random()*100),
-      lastSeen: new Date().toISOString(),
-      mac: 'DE:AD:BE:EF:00:0' + i,
-      vendor: 'Fallback Device'
-    }));
-  }, [subnet]);
-
-  const performScan = useCallback(async () => {
+const fetchNodes = useCallback(async () => {
     setLoading(true);
     try {
-      const ip = await getLocalIP();
-      setLocalIP(ip);
-      const detectedSubnet = getSubnet(ip);
-      setSubnet(detectedSubnet);
-
-      // Scan user's subnet range (common private ranges)
-      let rangeStart, rangeEnd;
-      if (detectedSubnet.includes('192.168')) {
-        rangeStart = 1; rangeEnd = 20;
-      } else if (detectedSubnet.includes('10.')) {
-        rangeStart = 1; rangeEnd = 20;
-      } else {
-        rangeStart = 1; rangeEnd = 254;
-      }
-
-      const liveDevices = await scanSubnet(rangeStart, rangeEnd);
-      setDevices(liveDevices);
+      const response = await fetch('/api/update-nodes');
+      if (!response.ok) throw new Error('API error');
+      const data = await response.json();
+      setDevices(data.devices || []);
+      console.log('📱 Nodes from phone:', data.devices?.length || 0);
     } catch (err) {
-      console.error('Scan error:', err);
-      // Fallback simulation with red theme
-      const fallback = Array.from({length: 12}, (_, i) => ({
-        ip: `${subnet.split('/')[0].split('.').slice(0,3).join('.')}.${1+i}`,
-        status: 'simulated',
-        latency: Math.floor(Math.random()*200),
-        lastSeen: new Date().toISOString(),
-        mac: `DE:AD:BE:${Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()}:${Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()}:${Math.floor(Math.random()*256).toString(16).padStart(2,'0').toUpperCase()}`,
-        vendor: 'Cyber Detected'
-      }));
-      setDevices(fallback);
+      console.error('Node fetch error:', err);
+      setDevices([]); // Show empty if no phone data yet
     } finally {
       setLoading(false);
     }
-  }, [scanSubnet, subnet]);
+  }, []);
 
   useEffect(() => {
-    performScan();
-    intervalRef.current = setInterval(performScan, 5000); // Real-time every 5s
-    return () => clearInterval(intervalRef.current);
-  }, [performScan]);
+    fetchNodes();
+    intervalRef.current = setInterval(fetchNodes, 2000); // Every 2s as requested
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [fetchNodes]);
 
   if (loading && devices.length === 0) {
     return (
@@ -136,7 +59,7 @@ const scanSubnet = useCallback(async (rangeStart, rangeEnd) => {
           </h2>
         </div>
         <div className="text-sm text-red-400 font-mono">
-          {devices.length} devices | {subnet} | Live
+          {devices.length} PHONE nodes | Live 📱
         </div>
       </motion.div>
 
@@ -227,8 +150,8 @@ const scanSubnet = useCallback(async (rangeStart, rangeEnd) => {
         {/* Status Overlay */}
         <div className="absolute inset-0 flex items-center justify-center bg-red-950/30">
           <div className="text-red-400 font-mono text-xl bg-black/80 p-8 rounded-2xl border-2 border-red-500/50 shadow-[0_0_50px_rgba(239,68,68,0.5)]">
-            🔴 AUTONOMOUS SCANNER: {devices.length} LIVE DEVICES DETECTED<br/>
-            <small>Real-time no-cors ping sweep | 100% Browser Independent</small>
+            🔴 PHONE-REPORTED: {devices.length} NODES | Live API sync 📱<br/>
+            <small>Real-time phone → server → map (2s poll)</small>
           </div>
         </div>
       </div>
@@ -240,8 +163,8 @@ const scanSubnet = useCallback(async (rangeStart, rangeEnd) => {
           <div className="text-sm uppercase tracking-wider text-red-300 opacity-90">DETECTED NODES</div>
         </div>
         <div>
-          <div className="text-xl font-black text-red-300">{subnet}</div>
-          <div className="text-xs uppercase text-red-400">SCAN RANGE</div>
+          <div className="text-xl font-black text-red-300">API SYNC</div>
+          <div className="text-xs uppercase text-red-400">PHONE DATA</div>
         </div>
         <div className="text-right">
           <div className="text-sm text-red-400 font-mono">{localIP || 'Detecting...'}</div>
