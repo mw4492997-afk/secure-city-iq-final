@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { getClientIP, realNetworkScan, getGeolocation, pingIP } from '@/lib/networkUtils';
+import { getClientIP, getGeolocation, pingIP, realNetworkScan } from '@/lib/networkUtils';
 
 interface Node {
   ip: string;
@@ -20,52 +20,48 @@ const NodeTopology = () => {
   const fetchScannedNodes = async () => {
     try {
       setScanStatus('Fetching client IP...');
-      
-      // Get client IP and geolocation
-      const [ip, geoData] = await Promise.all([
-        getClientIP(),
-        getGeolocation()
-      ]);
-
+      const ip = await getClientIP();
       setClientIP(ip);
-      setGeo(geoData);
-      
-      setScanStatus('Scanning network...');
 
-      // Perform real network scan
+      setScanStatus('Resolving geolocation...');
+      const geoData = await getGeolocation(ip);
+      setGeo(geoData);
+
+      setScanStatus('Pinging local node...');
+      const pingResult = await pingIP(ip);
+
+      setScanStatus('Scanning network...');
       const scanResults = await realNetworkScan(ip);
-      
-      // Combine client node with scan results
+
       const dynamicNodes: Node[] = [
-        { 
-          ip: ip, 
-          city: geoData.city, 
-          status: 'active',
-          responseTime: 0
+        {
+          ip,
+          city: geoData.city,
+          status: pingResult.reachable ? 'active' : 'inactive',
+          responseTime: pingResult.responseTime >= 0 ? pingResult.responseTime : 0,
         },
-        ...scanResults.map(result => ({
+        ...scanResults.map((result) => ({
           ip: result.ip,
           city: result.city || geoData.city,
           status: result.status,
-          responseTime: result.responseTime
-        }))
+          responseTime: result.responseTime,
+        })),
       ];
 
       setNodes(dynamicNodes);
       setScanStatus(`Scan complete: ${dynamicNodes.length} nodes detected`);
-      
-      console.log("🔥 REAL NETWORK SCAN COMPLETE:", dynamicNodes.length, "nodes detected");
+      console.log('🔥 REAL NETWORK SCAN COMPLETE:', dynamicNodes.length, 'nodes detected');
     } catch (error) {
-      console.error("Network scan error:", error);
+      console.error('Network scan error:', error);
       setScanStatus('Scan failed - showing local node only');
-      
-      // Fallback: show at least the client IP
-      setNodes([{ 
-        ip: clientIP || '127.0.0.1', 
-        city: geo.city, 
-        status: 'active',
-        responseTime: 0
-      }]);
+      setNodes([
+        {
+          ip: clientIP || '127.0.0.1',
+          city: geo.city,
+          status: 'active',
+          responseTime: 0,
+        },
+      ]);
     }
   };
 
