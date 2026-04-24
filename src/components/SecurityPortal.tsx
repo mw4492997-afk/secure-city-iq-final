@@ -64,16 +64,26 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
     setError("");
     setIsSubmitting(true);
 
-    // Simulate authentication delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const response = await fetch("/api/auth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
 
-    if (username === "admin" && password === "12345") {
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        setError(data.error || "ACCESS DENIED: UNAUTHORIZED ENTRY");
+        return;
+      }
+
       setStage("auth");
-    } else {
-      setError("ACCESS DENIED: UNAUTHORIZED ENTRY");
+    } catch (err) {
+      console.error(err);
+      setError("AUTH SERVICE UNAVAILABLE");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setIsSubmitting(false);
   };
 
   return (

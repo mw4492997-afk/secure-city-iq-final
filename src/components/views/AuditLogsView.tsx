@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { ArrowDownSquare, Clock3, ShieldCheck, RefreshCw, FileText } from "lucide-react";
-import { downloadCSV, downloadPDF, downloadXLSX } from "@/lib/fileExport";
+import { downloadCSV, downloadPDF, downloadXLSX } from "../../lib/fileExport";
 
 interface AuditEntry {
   id: string;
