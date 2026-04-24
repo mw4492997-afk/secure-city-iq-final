@@ -25,6 +25,10 @@ import FirewallView from "@/components/views/FirewallView";
 import ScannerView from "@/components/views/ScannerView";
 import KaliToolsetView from "@/components/views/KaliToolsetView";
 import SignalInterceptView from "@/components/views/SignalInterceptView";
+import AuditLogsView from "@/components/views/AuditLogsView";
+import BiometricLogsView from "@/components/views/BiometricLogsView";
+import VaultsView from "@/components/views/VaultsView";
+import AttackLabView from "@/components/views/AttackLabView";
 
 // Type definitions
 interface SystemStats {
@@ -157,10 +161,19 @@ export default function Home() {
 
   // Initialize authentication
   useEffect(() => {
-    const authStatus = localStorage.getItem("authenticated");
-    if (authStatus === "true") {
-      setIsAuthenticated(true);
-    }
+    const checkAuth = async () => {
+      try {
+        const response = await fetch("/api/auth");
+        const data = await response.json();
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+        }
+      } catch (error) {
+        console.error("Auth status check failed:", error);
+      }
+    };
+
+    checkAuth();
   }, []);
 
   // System stats update
@@ -325,7 +338,6 @@ export default function Home() {
   // Handlers
   const handleAccessGranted = () => {
     setIsAuthenticated(true);
-    localStorage.setItem("authenticated", "true");
     toast.success("BIOMETRIC VERIFIED. WELCOME ADMIN.");
   };
 
@@ -491,10 +503,11 @@ export default function Home() {
             whileHover={{ scale: 1.1, y: -2 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => {
-              setShowLogsModal(true);
+              setActiveComponent('logs');
+              setShowLogsModal(false);
               if (window.speechSynthesis) {
                 const utterance = new SpeechSynthesisUtterance(
-                  "Opening system execution logs. Secure City IQ history loaded."
+                  "Opening audit logs. Secure City IQ live event stream activated."
                 );
                 utterance.rate = 0.8;
                 utterance.pitch = 0.8;
@@ -503,7 +516,7 @@ export default function Home() {
               }
             }}
             className="relative w-11 h-11 bg-gradient-to-br from-white/10 to-white/5 hover:from-[var(--active-neon)]/20 hover:to-[var(--active-neon)]/5 border border-white/20 hover:border-[var(--active-neon)]/50 rounded-2xl flex items-center justify-center transition-all group shadow-[0_0_15px_rgba(0,255,153,0.0)] hover:shadow-[0_0_20px_rgba(0,255,153,0.3)]"
-            title="View System Logs"
+            title="View Audit Logs"
           >
             <FileText className="w-5 h-5 text-zinc-300 group-hover:text-[var(--active-neon)] transition-colors" />
           </motion.button>
@@ -677,9 +690,7 @@ export default function Home() {
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 w-full h-full"
               >
-                <div className="flex items-center justify-center h-full text-white text-xl font-black">
-                  Audit Logs View (Coming Soon)
-                </div>
+                <AuditLogsView />
               </motion.div>
             )}
 
@@ -706,9 +717,7 @@ export default function Home() {
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 w-full h-full"
               >
-                <div className="flex items-center justify-center h-full text-white text-xl font-black">
-                  Keys & Vaults View (Coming Soon)
-                </div>
+                <VaultsView />
               </motion.div>
             )}
 
@@ -720,9 +729,7 @@ export default function Home() {
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 w-full h-full"
               >
-                <div className="flex items-center justify-center h-full text-white text-xl font-black">
-                  Biometric Logs View (Coming Soon)
-                </div>
+                <BiometricLogsView />
               </motion.div>
             )}
 
@@ -734,9 +741,7 @@ export default function Home() {
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 w-full h-full"
               >
-                <div className="flex items-center justify-center h-full text-white text-xl font-black">
-                  Simulated Attack Lab View (Coming Soon)
-                </div>
+                <AttackLabView />
               </motion.div>
             )}
           </AnimatePresence>
