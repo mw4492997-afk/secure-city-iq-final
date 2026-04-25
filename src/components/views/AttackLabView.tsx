@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { Locale } from '@/lib/translations';
 import { toast } from "sonner";
 import { Zap, Activity, ShieldCheck } from "lucide-react";
 
@@ -23,7 +24,13 @@ interface AttackResult {
   detail: string;
 }
 
-export default function AttackLabView() {
+interface AttackLabViewProps {
+  speakAttack: (label: string) => void;
+  t: Record<string, string>;
+  language: Locale;
+}
+
+export default function AttackLabView({ speakAttack, t }: AttackLabViewProps) {
   const [scenarios, setScenarios] = useState<AttackScenario[]>([]);
   const [history, setHistory] = useState<AttackResult[]>([]);
   const [running, setRunning] = useState<string | null>(null);
@@ -45,9 +52,20 @@ export default function AttackLabView() {
     };
 
     loadScenarios();
-  }, []);
+  }, [speakAttack]);
+
+  useEffect(() => {
+    const ongoing = history.filter((entry) => /RUNNING|IN_PROGRESS|EXECUTING/i.test(entry.status));
+    if (ongoing.length > 0) {
+      ongoing.forEach((entry) => speakAttack(entry.title));
+    }
+  }, [history, speakAttack]);
 
   const launchScenario = async (scenarioId: string) => {
+    const scenario = scenarios.find((s) => s.id === scenarioId);
+    if (scenario) {
+      speakAttack(scenario.title);
+    }
     setRunning(scenarioId);
     try {
       const response = await fetch("/api/attack-lab", {
@@ -74,15 +92,15 @@ export default function AttackLabView() {
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <div className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--active-neon)] mb-2">
-            Simulated Attack Lab
+            {t.attackLabTitle}
           </div>
-          <h1 className="text-3xl font-black text-white">Attack Simulation</h1>
+          <h1 className="text-3xl font-black text-white">{t.attackLabSubtitle}</h1>
           <p className="text-sm text-zinc-500 max-w-2xl mt-2">
-            Launch controlled red-team scenarios and observe containment status.
+            {t.attackLabGuidance}
           </p>
         </div>
         <div className="rounded-3xl border border-white/10 bg-black/30 px-4 py-3 text-sm text-zinc-300">
-          Scenarios: <span className="font-black text-[var(--active-neon)]">{scenarios.length}</span>
+          {t.scenarios}: <span className="font-black text-[var(--active-neon)]">{scenarios.length}</span>
         </div>
       </div>
 
@@ -110,7 +128,7 @@ export default function AttackLabView() {
               disabled={Boolean(running)}
               className="mt-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--active-neon)] bg-[var(--active-neon)]/10 px-5 py-3 text-sm font-black uppercase tracking-[0.2em] text-[var(--active-neon)] hover:bg-[var(--active-neon)]/15 transition disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Zap className="w-4 h-4" /> {running === scenario.id ? "Launching..." : "Launch"}
+              <Zap className="w-4 h-4" /> {running === scenario.id ? t.launching : t.launch}
             </button>
           </div>
         ))}
@@ -119,14 +137,14 @@ export default function AttackLabView() {
       <div className="glass-card border border-[var(--active-neon)]/20 p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <div className="text-xs uppercase tracking-[0.4em] text-[var(--active-neon)]">Execution History</div>
-            <p className="text-sm text-zinc-400">Recent attack simulation outcomes and defense responses.</p>
+            <div className="text-xs uppercase tracking-[0.4em] text-[var(--active-neon)]">{t.executionHistory}</div>
+            <p className="text-sm text-zinc-400">{t.executionHistoryDesc}</p>
           </div>
           <ShieldCheck className="w-5 h-5 text-[var(--active-neon)]" />
         </div>
 
         {history.length === 0 ? (
-          <div className="text-zinc-500">No attack simulations executed yet.</div>
+          <div className="text-zinc-500">{t.noAttackSimulations}</div>
         ) : (
           <div className="space-y-3">
             {history.map((entry) => (
@@ -151,10 +169,10 @@ export default function AttackLabView() {
 
       <div className="rounded-3xl border border-white/10 bg-black/30 p-6 text-sm text-zinc-400">
         <div className="flex items-center gap-3 mb-3 text-[var(--active-neon)] uppercase tracking-[0.35em] font-black">
-          <Activity className="w-4 h-4" /> Attack Lab Guidance
+          <Activity className="w-4 h-4" /> {t.attackLab}
         </div>
         <div>
-          Simulated attacks are controlled exercises designed to validate detection and containment paths. Use this lab to verify that threat telemetry and defensive responses are working together.
+          {t.attackLabGuidance}
         </div>
       </div>
     </div>

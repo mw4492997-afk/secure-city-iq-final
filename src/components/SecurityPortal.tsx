@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShieldCheck, Lock, Unlock, Fingerprint, Cpu, Key, User } from "lucide-react";
 
-export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: () => void }) {
+export default function SecurityPortal({ onAccessGranted, t, language }: { onAccessGranted: () => void; t: Record<string, string>; language: 'en' | 'ar'; }) {
   const [stage, setStage] = useState<"login" | "auth" | "scanning" | "decoding" | "granted">("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -100,9 +100,9 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
             className="flex flex-col items-center gap-8 z-10 w-full max-w-sm"
           >
             <div className="text-center">
-              <h1 className="neon-text text-3xl font-black tracking-widest mb-2 uppercase">Security Access</h1>
+              <h1 className="neon-text text-3xl font-black tracking-widest mb-2 uppercase">{t.securityAccess}</h1>
               <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
-                Enter Credentials
+                {t.enterCredentials}
               </p>
             </div>
 
@@ -110,14 +110,14 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
               <div className="relative">
                 <div className="flex items-center gap-3 mb-2">
                   <User className="w-4 h-4 text-[var(--active-neon)]" />
-                  <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">User ID</label>
+                  <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">{t.userId}</label>
                 </div>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full bg-zinc-900/50 border border-[var(--active-neon)]/30 rounded-lg px-4 py-3 text-[var(--active-neon)] font-mono text-sm focus:border-[var(--active-neon)] focus:outline-none transition-all"
-                  placeholder="Enter User ID"
+                  placeholder={t.userId}
                   disabled={isSubmitting}
                   autoComplete="off"
                 />
@@ -126,14 +126,14 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
               <div className="relative">
                 <div className="flex items-center gap-3 mb-2">
                   <Key className="w-4 h-4 text-[var(--active-neon)]" />
-                  <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">Access Code</label>
+                  <label className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">{t.accessCode}</label>
                 </div>
                 <input
                   type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full bg-zinc-900/50 border border-[var(--active-neon)]/30 rounded-lg px-4 py-3 text-[var(--active-neon)] font-mono text-sm focus:border-[var(--active-neon)] focus:outline-none transition-all"
-                  placeholder="Enter Access Code"
+                  placeholder={t.enterCredentials}
                   disabled={isSubmitting}
                   autoComplete="new-password"
                 />
@@ -157,10 +157,10 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
                 {isSubmitting ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-[var(--active-neon)] border-t-transparent rounded-full animate-spin" />
-                    <span>Authenticating...</span>
+                    <span>{t.authenticating}</span>
                   </div>
                 ) : (
-                  "Access System"
+                  t.accessSystem
                 )}
               </button>
             </form>
@@ -196,9 +196,9 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
             </div>
             
             <div className="text-center">
-              <h1 className="neon-text text-3xl font-black tracking-widest mb-2 uppercase">Security Gateway</h1>
+              <h1 className="neon-text text-3xl font-black tracking-widest mb-2 uppercase">{t.securityGateway}</h1>
               <p className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest">
-                {isHolding ? "Scanning Fingerprint..." : "Press and hold to scan"}
+                {isHolding ? t.scanningFingerprint : t.pressHoldScan}
               </p>
             </div>
 
@@ -232,7 +232,7 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
               />
             </div>
             <div className="flex justify-between w-full text-[10px] font-mono text-[var(--active-neon)] uppercase tracking-widest">
-              <span>Scanning Neural Pattern</span>
+              <span>{t.scanningNeuralPattern}</span>
               <span suppressHydrationWarning>{progress}%</span>
             </div>
           </motion.div>
@@ -247,7 +247,7 @@ export default function SecurityPortal({ onAccessGranted }: { onAccessGranted: (
           >
             <Cpu className="w-16 h-16 text-[var(--active-neon)] animate-spin-slow" />
             <div className="text-[var(--active-neon)] font-mono text-xs animate-pulse tracking-widest uppercase">
-              Decrypting Access Token...
+              {t.decryptingAccessToken}
             </div>
           </motion.div>
         )}

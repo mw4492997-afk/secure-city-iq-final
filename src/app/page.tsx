@@ -9,7 +9,12 @@ import {
   FileText,
   Bell,
   User,
+  Volume2,
+  VolumeX,
+  BookOpen,
 } from "lucide-react";
+
+import { Locale, translations } from "@/lib/translations";
 
 // Import layout components
 import HamburgerSidebar from "@/components/HamburgerSidebar";
@@ -123,6 +128,16 @@ export default function Home() {
   const [showSecurityCard, setShowSecurityCard] = useState(false);
   const [showAuditLogsModal, setShowAuditLogsModal] = useState(false);
   const [showKaliToolset, setShowKaliToolset] = useState(false);
+  const [showUserGuide, setShowUserGuide] = useState(false);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [audioVolume, setAudioVolume] = useState(0.7);
+  const [showVolumeControl, setShowVolumeControl] = useState(false);
+  const [language, setLanguage] = useState<Locale>('en');
+  const t = translations[language];
+
+  const setNextLanguage = () => {
+    setLanguage((prev) => (prev === 'en' ? 'ar' : 'en'));
+  };
 
   // System state
   const [consoleLogs, setConsoleLogs] = useState<string[]>([]);
@@ -225,18 +240,40 @@ export default function Home() {
     document.documentElement.setAttribute("data-emergency", redAlert.toString());
   }, [redAlert]);
 
+  const speak = (text: string) => {
+    if (!audioEnabled || typeof window === "undefined" || !window.speechSynthesis) {
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 0.8;
+    utterance.pitch = 0.8;
+    utterance.volume = audioVolume;
+    if (language === 'ar') {
+      utterance.lang = 'ar-SA';
+    }
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const toggleAudio = () => {
+    const nextEnabled = !audioEnabled;
+    setAudioEnabled(nextEnabled);
+
+    if (!nextEnabled && typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  };
+
+  const toggleVolumePanel = () => {
+    setShowVolumeControl((prev) => !prev);
+  };
+
   // Startup speech synthesis
   useEffect(() => {
-    if (isAuthenticated && window.speechSynthesis) {
-      const utterance = new SpeechSynthesisUtterance(
-        "System initialized. All modules operational. Network monitoring active."
-      );
-      utterance.rate = 0.8;
-      utterance.pitch = 0.8;
-      utterance.volume = 0.7;
-      window.speechSynthesis.speak(utterance);
+    if (isAuthenticated) {
+      speak(t.startupInitialized);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, audioEnabled, audioVolume, language]);
 
   // System logs generator - real environment status and live service checks
   useEffect(() => {
@@ -338,7 +375,7 @@ export default function Home() {
   // Handlers
   const handleAccessGranted = () => {
     setIsAuthenticated(true);
-    toast.success("BIOMETRIC VERIFIED. WELCOME ADMIN.");
+    toast.success(t.biometricVerified);
   };
 
   const handleActivateLockdown = () => {
@@ -346,13 +383,13 @@ export default function Home() {
     setRedAlert(nextState);
     document.documentElement.setAttribute("data-red-alert", nextState.toString());
     if (nextState) {
-      toast.error("PROTOCOL 9-RED: TOTAL LOCKDOWN ENGAGED");
+      toast.error(t.lockdownEngaged);
       setConsoleLogs((prev) => [
         ...prev.slice(-15),
         `[${new Date().toLocaleTimeString()}] !!! CRITICAL: FULL SYSTEM ISOLATION INITIATED !!!`,
       ]);
     } else {
-      toast.success("Lockdown terminated. Syncing nodes...");
+      toast.success(t.lockdownTerminated);
       setConsoleLogs((prev) => [
         ...prev.slice(-15),
         `[${new Date().toLocaleTimeString()}] STATUS: Security level normalized. Re-establishing uplinks.`,
@@ -364,11 +401,12 @@ export default function Home() {
 
 
   // Render authentication screen if not authenticated
-  if (!isAuthenticated) return <SecurityPortal onAccessGranted={handleAccessGranted} />;
+  if (!isAuthenticated) return <SecurityPortal onAccessGranted={handleAccessGranted} t={t} language={language} />;
 
   // Render main dashboard
   return (
     <div
+      dir={language === 'ar' ? 'rtl' : 'ltr'}
       className={`fixed inset-0 bg-[#020202] text-zinc-300 font-mono selection:bg-[var(--active-neon)] selection:text-black overflow-hidden relative h-screen w-screen ${
         redAlert ? "animate-pulse bg-red-950/20" : ""
       } ${isAlertMode ? "alert-mode" : ""} ${isStealthMode ? "stealth-mode" : ""}`}
@@ -413,144 +451,177 @@ export default function Home() {
       <CyberPulse />
 
       {/* Header Navigation */}
-      <nav className="fixed top-0 left-0 right-0 h-20 border-b border-white/10 bg-gradient-to-b from-black/90 to-black/70 backdrop-blur-3xl z-40 px-8 flex items-center justify-between shadow-[0_0_40px_rgba(0,255,153,0.1)]">
-        <div className="flex items-center gap-6">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={toggleSidebar}
-            className="p-3 rounded-2xl bg-gradient-to-br from-black/50 to-black/30 border border-white/30 hover:border-[var(--active-neon)]/50 hover:bg-[var(--active-neon)]/10 hover:shadow-[0_0_25px_var(--active-neon)] transition-all group backdrop-blur-md"
-            title="Open Sidebar Menu"
-          >
-            <Menu className="w-6 h-6 text-zinc-300 group-hover:text-[var(--active-neon)] transition-colors" />
-          </motion.button>
-          <motion.div
-            whileHover={{ scale: 1.15, rotate: 90 }}
-            whileTap={{ scale: 0.9 }}
-            className="w-12 h-12 bg-gradient-to-tr from-[var(--active-neon)]/30 to-emerald-500/30 border border-[var(--active-neon)]/50 rounded-2xl flex items-center justify-center shadow-[0_0_40px_rgba(0,255,153,0.25)] group transition-all cursor-pointer"
-          >
-            <ShieldCheck className="w-7 h-7 text-[var(--active-neon)] group-hover:scale-125 transition-transform" />
-          </motion.div>
-          <div className="text-right ml-auto">
-            <div className="text-xs font-black text-white leading-none mb-1">
-              SYS CLOCK
-            </div>
-            <div className="text-[10px] text-[var(--active-neon)] font-bold uppercase tracking-widest">
-              {currentTime.toLocaleTimeString()}
-            </div>
-            <div className="text-[9px] text-zinc-500 font-black uppercase tracking-widest mt-1">
-              Uptime: {uptime}
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div className="flex items-baseline gap-2">
-            <h1 className="text-white font-black tracking-[-0.05em] text-2xl">
-              ORCHIDS
-            </h1>
-            <span className="text-[var(--active-neon)] font-black text-2xl">
-              INTEL
-            </span>
-          </div>
-          <div className="flex items-center gap-3 text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em]">
-            <div className="flex gap-1">
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="w-1 h-1 rounded-full bg-green-500 animate-pulse"
-                  style={{ animationDelay: `${i * 0.2}s` }}
-                />
-              ))}
-            </div>
-            {headerInfo}
-          </div>
-        </div>
-
-        <div className="hidden xl:flex items-center gap-10 bg-gradient-to-r from-white/5 to-[var(--active-neon)]/5 px-8 py-3 rounded-full border border-white/10 backdrop-blur-md hover:border-[var(--active-neon)]/30 transition-all shadow-[0_0_20px_rgba(0,255,153,0.1)]">
-          <NavStatV3
-            label="CPU LOAD"
-            value={`${systemStats.cpu.toFixed(0)}%`}
-            progress={systemStats.cpu}
-            color="neon"
-          />
-          <div className="w-[1px] h-6 bg-gradient-to-b from-white/10 to-transparent" />
-          <NavStatV3
-            label="ENCRYPTION"
-            value={`${systemStats.encryption} BIT`}
-            progress={100}
-            color="blue"
-          />
-          <div className="w-[1px] h-6 bg-gradient-to-b from-white/10 to-transparent" />
-          <NavStatV3
-            label="ACTIVE THREATS"
-            value={systemStats.threats.toString()}
-            progress={systemStats.threats * 10}
-            color="red"
-          />
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="hidden sm:flex flex-col items-end mr-2">
-            <span className="text-[10px] text-zinc-500 font-black tracking-widest uppercase\">
-              UPTIME
-            </span>
-            <span className="text-xs font-black text-[var(--active-neon)] drop-shadow-[0_0_8px_rgba(0,255,153,0.4)]">
-              {systemStats.uptime}
-            </span>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.1, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => {
-              setActiveComponent('logs');
-              setShowLogsModal(false);
-              if (window.speechSynthesis) {
-                const utterance = new SpeechSynthesisUtterance(
-                  "Opening audit logs. Secure City IQ live event stream activated."
-                );
-                utterance.rate = 0.8;
-                utterance.pitch = 0.8;
-                utterance.volume = 0.7;
-                window.speechSynthesis.speak(utterance);
-              }
-            }}
-            className="relative w-11 h-11 bg-gradient-to-br from-white/10 to-white/5 hover:from-[var(--active-neon)]/20 hover:to-[var(--active-neon)]/5 border border-white/20 hover:border-[var(--active-neon)]/50 rounded-2xl flex items-center justify-center transition-all group shadow-[0_0_15px_rgba(0,255,153,0.0)] hover:shadow-[0_0_20px_rgba(0,255,153,0.3)]"
-            title="View Audit Logs"
-          >
-            <FileText className="w-5 h-5 text-zinc-300 group-hover:text-[var(--active-neon)] transition-colors" />
-          </motion.button>
-          <motion.button 
-            whileHover={{ scale: 1.1, y: -2 }}
-            whileTap={{ scale: 0.95 }}
-            className="relative w-11 h-11 bg-gradient-to-br from-white/10 to-white/5 hover:from-red-500/20 hover:to-red-500/5 border border-white/20 hover:border-red-500/50 rounded-2xl flex items-center justify-center transition-all group shadow-[0_0_15px_rgba(0,255,153,0.0)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]"
-          >
-            <Bell className="w-5 h-5 text-zinc-300 group-hover:text-red-400" />
-            <motion.span 
-              animate={{ scale: [1, 1.3, 1], opacity: [0.8, 1, 0.8] }}
-              transition={{ duration: 1.5, repeat: Infinity }}
-              className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black shadow-[0_0_8px_rgba(239,68,68,0.6)]" 
-            />
-          </motion.button>
-          <div className="flex items-center gap-4 pl-4 border-l border-white/20">
-            <div className="text-right hidden sm:block">
-              <div className="text-xs font-black text-white leading-none mb-1">
-                SUPER_USER
-              </div>
-              <div className="text-[9px] text-[var(--active-neon)] font-black uppercase tracking-widest drop-shadow-[0_0_8px_rgba(0,255,153,0.3)]">
-                CLEARANCE LVL 5
-              </div>
-            </div>
-            <motion.div
-              whileHover={{ scale: 1.15, y: -2 }}
+      <nav className="fixed top-0 left-0 right-0 h-24 z-40 px-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(0,255,163,0.16),transparent_30%),linear-gradient(135deg,rgba(0,10,15,0.96),rgba(0,0,0,0.88))] backdrop-blur-[28px] border-b border-cyan-500/10 shadow-[0_0_65px_rgba(0,255,163,0.18)]" />
+        <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-cyan-400/80 via-sky-400/40 to-purple-500/80 blur-2xl" />
+        <div className="relative z-10 flex h-full items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--active-neon)]/20 to-emerald-500/10 border border-[var(--active-neon)]/40 p-[1px] shadow-[0_0_25px_rgba(0,255,153,0.2)] cursor-pointer transition-all hover:shadow-[0_0_35px_rgba(0,255,153,0.4)]"
-              onClick={() => setShowSecurityCard(true)}
+              onClick={toggleSidebar}
+              className="p-3 rounded-3xl bg-black/50 border border-white/10 text-zinc-100 hover:border-cyan-500/40 hover:bg-cyan-500/10 transition-all shadow-[0_0_20px_rgba(0,255,163,0.12)]"
+              title={t.openSidebar}
             >
-              <div className="w-full h-full rounded-[inherit] bg-black/30 flex items-center justify-center hover:bg-[var(--active-neon)]/10 transition-all">
-                <User className="w-6 h-6 text-[var(--active-neon)] group-hover:text-white transition-colors" />
-              </div>
+              <Menu className="w-6 h-6" />
+            </motion.button>
+            <motion.div
+              whileHover={{ scale: 1.1, rotate: 8 }}
+              whileTap={{ scale: 0.95 }}
+              className="min-w-[88px] rounded-[28px] bg-gradient-to-br from-cyan-500/20 to-slate-900/30 border border-cyan-500/20 px-4 py-3 shadow-[0_0_30px_rgba(0,255,163,0.12)]"
+            >
+              <div className="text-[10px] uppercase tracking-[0.35em] text-cyan-300 font-black">NEXUS</div>
+              <div className="text-sm font-black text-white uppercase tracking-[0.1em]">SECURE</div>
             </motion.div>
+          </div>
+
+          <div className="flex-1 flex flex-col items-center text-center gap-1">
+            <div className="flex items-baseline gap-3">
+              <h1 className="text-white font-black tracking-[-0.05em] text-3xl leading-none">ORCHIDS</h1>
+              <span className="text-[var(--active-neon)] font-black text-3xl leading-none">INTEL</span>
+            </div>
+            <div className="flex items-center gap-2 rounded-3xl bg-white/5 border border-white/10 px-4 py-2 text-[10px] uppercase tracking-[0.2em] text-zinc-300 shadow-[0_0_25px_rgba(0,255,163,0.08)]">
+              <div className="flex gap-1">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"
+                    style={{ animationDelay: `${i * 0.15}s` }}
+                  />
+                ))}
+              </div>
+              <span>{headerInfo}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="hidden xl:flex items-center gap-6">
+              <div className="flex flex-col items-end text-right gap-1">
+                <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-400">{t.systemTime}</span>
+                <span className="text-base font-black uppercase tracking-[0.2em] text-white">{currentTime.toLocaleTimeString()}</span>
+                <span className="text-[10px] uppercase tracking-[0.25em] text-cyan-300">{t.uptime} {uptime}</span>
+              </div>
+              <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-full px-4 py-2 shadow-[0_0_20px_rgba(0,255,163,0.08)]">
+                <NavStatV3 label="CPU" value={`${systemStats.cpu.toFixed(0)}%`} progress={systemStats.cpu} color="neon" />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <motion.button
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  setActiveComponent('logs');
+                  setShowLogsModal(false);
+                  speak(t.systemAuditLogs);
+                }}
+                className="relative w-11 h-11 bg-gradient-to-br from-white/10 to-white/5 hover:from-[var(--active-neon)]/20 hover:to-[var(--active-neon)]/5 border border-white/20 hover:border-[var(--active-neon)]/50 rounded-2xl flex items-center justify-center transition-all group shadow-[0_0_15px_rgba(0,255,153,0.0)] hover:shadow-[0_0_20px_rgba(0,255,153,0.3)]"
+                title={t.viewAuditLogs}
+              >
+                <FileText className="w-5 h-5 text-zinc-300 group-hover:text-[var(--active-neon)] transition-colors" />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.08, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowUserGuide(true)}
+                className="relative w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500/20 via-slate-900/40 to-black border border-cyan-300/25 shadow-[0_0_25px_rgba(45,212,191,0.28)] hover:shadow-[0_0_35px_rgba(45,212,191,0.45)] flex items-center justify-center transition-all overflow-hidden"
+                title={t.userGuide}
+              >
+                <span className="absolute inset-0 rounded-full border border-cyan-400/40 animate-pulse opacity-70" />
+                <span className="relative flex flex-col items-center justify-center gap-0 text-[10px] uppercase tracking-[0.3em] text-white font-black">
+                  <BookOpen className="w-5 h-5" />
+                  <span className="text-[8px]">{t.userGuide}</span>
+                </span>
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={setNextLanguage}
+                className="relative w-11 h-11 bg-gradient-to-br from-white/10 to-white/5 hover:from-[var(--active-neon)]/20 hover:to-[var(--active-neon)]/5 border border-white/20 hover:border-[var(--active-neon)]/50 rounded-2xl flex items-center justify-center transition-all group shadow-[0_0_15px_rgba(0,255,153,0.0)] hover:shadow-[0_0_20px_rgba(0,255,153,0.3)]"
+                title={t.language}
+              >
+                <span className="text-zinc-300 font-black">{t.languageSwitch}</span>
+              </motion.button>
+              <div className="relative">
+                <motion.button
+                  whileHover={{ scale: 1.1, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={toggleVolumePanel}
+                  className="relative w-11 h-11 bg-gradient-to-br from-white/10 to-white/5 hover:from-[var(--active-neon)]/20 hover:to-[var(--active-neon)]/5 border border-white/20 hover:border-[var(--active-neon)]/50 rounded-2xl flex items-center justify-center transition-all group shadow-[0_0_15px_rgba(0,255,153,0.0)] hover:shadow-[0_0_20px_rgba(0,255,153,0.3)]"
+                  title={t.audioSettings}
+                >
+                  {audioEnabled ? (
+                    <Volume2 className="w-5 h-5 text-zinc-300 group-hover:text-[var(--active-neon)] transition-colors" />
+                  ) : (
+                    <VolumeX className="w-5 h-5 text-zinc-300 group-hover:text-[var(--active-neon)] transition-colors" />
+                  )}
+                </motion.button>
+                {showVolumeControl && (
+                  <div className="absolute right-0 top-full mt-2 w-52 rounded-3xl bg-black/90 border border-white/10 p-3 shadow-[0_0_25px_rgba(0,0,0,0.5)] z-50">
+                    <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.2em] text-zinc-400 mb-2">
+                      <span>{t.audio}</span>
+                      <span>{audioEnabled ? Math.round(audioVolume * 100) : 0}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={0}
+                      max={1}
+                      step={0.05}
+                      value={audioEnabled ? audioVolume : 0}
+                      onChange={(e) => {
+                        const volume = Number(e.target.value);
+                        setAudioVolume(volume);
+                        if (!audioEnabled && volume > 0) setAudioEnabled(true);
+                      }}
+                      className="w-full h-2 rounded-full accent-cyan-400"
+                    />
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={toggleAudio}
+                        className="flex-1 rounded-lg border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-zinc-300 hover:bg-white/5 transition"
+                      >
+                        {audioEnabled ? t.mute : t.unmute}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowVolumeControl(false)}
+                        className="flex-1 rounded-lg border border-white/10 px-3 py-2 text-[10px] uppercase tracking-[0.2em] text-zinc-300 hover:bg-white/5 transition"
+                      >
+                        {t.close}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.1, y: -2 }}
+                whileTap={{ scale: 0.95 }}
+                className="relative w-11 h-11 bg-gradient-to-br from-white/10 to-white/5 hover:from-red-500/20 hover:to-red-500/5 border border-white/20 hover:border-red-500/50 rounded-2xl flex items-center justify-center transition-all group shadow-[0_0_15px_rgba(0,255,153,0.0)] hover:shadow-[0_0_20px_rgba(239,68,68,0.3)]"
+              >
+                <Bell className="w-5 h-5 text-zinc-300 group-hover:text-red-400" />
+                <motion.span
+                  animate={{ scale: [1, 1.3, 1], opacity: [0.8, 1, 0.8] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                  className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black shadow-[0_0_8px_rgba(239,68,68,0.6)]"
+                />
+              </motion.button>
+              <div className="flex items-center gap-4 pl-4 border-l border-white/20">
+                <div className="text-right hidden sm:block">
+                  <div className="text-xs font-black text-white leading-none mb-1">SUPER_USER</div>
+                  <div className="text-[9px] text-[var(--active-neon)] font-black uppercase tracking-widest drop-shadow-[0_0_8px_rgba(0,255,153,0.3)]">CLEARANCE LVL 5</div>
+                </div>
+                <motion.div
+                  whileHover={{ scale: 1.15, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--active-neon)]/20 to-emerald-500/10 border border-[var(--active-neon)]/40 p-[1px] shadow-[0_0_25px_rgba(0,255,153,0.2)] cursor-pointer transition-all hover:shadow-[0_0_35px_rgba(0,255,153,0.4)]"
+                  onClick={() => setShowSecurityCard(true)}
+                >
+                  <div className="w-full h-full rounded-[inherit] bg-black/30 flex items-center justify-center hover:bg-[var(--active-neon)]/10 transition-all">
+                    <User className="w-6 h-6 text-[var(--active-neon)] group-hover:text-white transition-colors" />
+                  </div>
+                </motion.div>
+              </div>
+            </div>
           </div>
         </div>
       </nav>
@@ -572,6 +643,9 @@ export default function Home() {
           setShowKaliToolset={setShowKaliToolset}
           setTestLabMode={() => {}}
           handleActivateLockdown={handleActivateLockdown}
+          speakLabel={speak}
+          openUserGuide={() => setShowUserGuide(true)}
+          t={t}
         />
 
         {/* Main view - Dynamic component rendering */}
@@ -616,6 +690,8 @@ export default function Home() {
                   setOsintResults={setOsintResults}
                   isScanning={isOsintScanning}
                   setIsScanning={setIsOsintScanning}
+                  t={t}
+                  language={language}
                 />
               </motion.div>
             )}
@@ -631,6 +707,8 @@ export default function Home() {
                 <TopologyView
                   consoleLogs={consoleLogs}
                   setConsoleLogs={setConsoleLogs}
+                  t={t}
+                  language={language}
                 />
               </motion.div>
             )}
@@ -662,6 +740,8 @@ export default function Home() {
                 <ScannerView
                   consoleLogs={consoleLogs}
                   setConsoleLogs={setConsoleLogs}
+                  t={t}
+                  language={language}
                 />
               </motion.div>
             )}
@@ -741,7 +821,7 @@ export default function Home() {
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 w-full h-full"
               >
-                <AttackLabView />
+                <AttackLabView speakAttack={speak} t={t} language={language} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -755,6 +835,8 @@ export default function Home() {
             osintResults={osintResults}
             isScanning={isOsintScanning}
             isProcessingTool={false}
+            t={t}
+            language={language}
           />
         )}
       </div>
@@ -813,6 +895,129 @@ export default function Home() {
                     );
                   })
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* User Guide Overlay */}
+      <AnimatePresence>
+        {showUserGuide && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+            onClick={() => setShowUserGuide(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="w-full max-w-4xl rounded-3xl bg-[#050708]/95 border border-cyan-500/20 shadow-[0_0_80px_rgba(0,255,163,0.2)] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between gap-4 border-b border-white/10 px-6 py-5 bg-black/60">
+                <div>
+                  <div className="text-sm font-black uppercase tracking-[0.25em] text-[var(--active-neon)]">{t.userGuide}</div>
+                  <h2 className="text-2xl font-black text-white">{t.userGuideTitle}</h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowUserGuide(false)}
+                  className="rounded-2xl border border-white/10 bg-white/5 px-4 py-2 text-[10px] uppercase tracking-[0.25em] text-zinc-300 hover:bg-white/10"
+                >
+                  {t.closeGuide}
+                </button>
+              </div>
+              <div className="grid gap-4 lg:grid-cols-[1.5fr_1fr] p-6 text-sm text-zinc-300">
+                <div className="space-y-4">
+                  <div className="rounded-3xl border border-cyan-500/15 bg-[#071214] p-6 shadow-[0_0_30px_rgba(0,255,163,0.12)]">
+                    <div className="text-[10px] uppercase tracking-[0.35em] text-[var(--active-neon)] font-black mb-3">{t.userGuideOverviewTitle}</div>
+                    <p className="text-zinc-300 leading-relaxed">{t.userGuideOverviewDesc}</p>
+                  </div>
+
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+                      <div className="font-bold text-[var(--active-neon)] mb-3">{t.userGuideGettingStartedTitle}</div>
+                      <ol className="list-decimal list-inside space-y-2 text-zinc-400 text-[13px]">
+                        <li>{t.userGuideStepOne}</li>
+                        <li>{t.userGuideStepTwo}</li>
+                        <li>{t.userGuideStepThree}</li>
+                      </ol>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/40 p-4">
+                      <div className="font-bold text-[var(--active-neon)] mb-3">{t.userGuideTipsTitle}</div>
+                      <ul className="list-disc list-inside space-y-2 text-zinc-400 text-[13px]">
+                        <li>{t.userGuideTip1}</li>
+                        <li>{t.userGuideTip2}</li>
+                        <li>{t.userGuideTip3}</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {[{
+                      title: t.userGuideCommandCenter,
+                      desc: t.userGuideCommandCenterDesc,
+                    }, {
+                      title: t.userGuideGlobalIntelligence,
+                      desc: t.userGuideGlobalIntelligenceDesc,
+                    }, {
+                      title: t.userGuideCyberTopology,
+                      desc: t.userGuideCyberTopologyDesc,
+                    }, {
+                      title: t.userGuideSignalIntercept,
+                      desc: t.userGuideSignalInterceptDesc,
+                    }, {
+                      title: t.userGuideActiveFirewall,
+                      desc: t.userGuideActiveFirewallDesc,
+                    }, {
+                      title: t.userGuideAuditLogs,
+                      desc: t.userGuideAuditLogsDesc,
+                    }, {
+                      title: t.userGuideKaliToolset,
+                      desc: t.userGuideKaliToolsetDesc,
+                    }, {
+                      title: t.userGuideVulnerabilityScan,
+                      desc: t.userGuideVulnerabilityScanDesc,
+                    }, {
+                      title: t.userGuideKeysVaults,
+                      desc: t.userGuideKeysVaultsDesc,
+                    }, {
+                      title: t.userGuideBiometricLogs,
+                      desc: t.userGuideBiometricLogsDesc,
+                    }, {
+                      title: t.userGuideAttackLab,
+                      desc: t.userGuideAttackLabDesc,
+                    }].map((item, index) => (
+                      <div key={index} className="rounded-2xl border border-white/10 bg-black/40 p-4">
+                        <div className="font-bold text-[var(--active-neon)]">{item.title}</div>
+                        <div className="text-[11px] text-zinc-400 mt-1">{item.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="rounded-3xl bg-[radial-gradient(circle_at_top_left,rgba(0,255,163,0.18),transparent_40%)] border border-white/10 p-6 text-[10px] text-zinc-400">
+                  <div className="mb-4 text-sm font-black uppercase tracking-[0.25em] text-[var(--active-neon)]">{t.userGuideWhatToKnowTitle}</div>
+                  <p className="text-zinc-300 leading-relaxed text-[13px] mb-4">{t.userGuideWhatToKnowDesc}</p>
+                  <div className="mb-4 text-sm font-black uppercase tracking-[0.25em] text-[var(--active-neon)]">{t.userGuideNavigationTitle}</div>
+                  <ul className="space-y-3 text-[13px] text-zinc-400">
+                    <li>• {t.commandCenter}</li>
+                    <li>• {t.globalIntelligence}</li>
+                    <li>• {t.cyberTopology}</li>
+                    <li>• {t.signalIntercept}</li>
+                    <li>• {t.activeFirewall}</li>
+                    <li>• {t.systemAuditLogsMenu}</li>
+                    <li>• {t.kaliToolset}</li>
+                    <li>• {t.vulnerabilityScan}</li>
+                    <li>• {t.keysVaults}</li>
+                    <li>• {t.biometricLogs}</li>
+                    <li>• {t.launchAttack}</li>
+                  </ul>
+                </div>
               </div>
             </motion.div>
           </motion.div>

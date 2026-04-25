@@ -13,9 +13,11 @@ interface TerminalLogsProps {
   osintResults?: OSINTResult[] | null;
   isScanning?: boolean;
   isProcessingTool?: boolean;
+  t?: Record<string, string>;
+  language?: 'en' | 'ar';
 }
 
-export default function TerminalLogs({ logs = [], onEmergency, osintResults, isScanning, isProcessingTool }: TerminalLogsProps) {
+export default function TerminalLogs({ logs = [], onEmergency, osintResults, isScanning, isProcessingTool, t }: TerminalLogsProps) {
   return (
     <div className="flex-1 bg-black border border-green-400/50 rounded-lg p-4 overflow-hidden">
       <div className="h-full overflow-y-auto scroll-mt-10 scrollbar-thin scrollbar-thumb-green-400 scrollbar-track-black" ref={(el) => {
@@ -42,11 +44,11 @@ export default function TerminalLogs({ logs = [], onEmergency, osintResults, isS
         {/* OSINT Scanning Progress */}
         {isScanning && (
           <div className="mb-4 p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
-            <div className="text-blue-400 font-mono text-sm mb-2">INITIALIZING OSINT SEARCH...</div>
+            <div className="text-blue-400 font-mono text-sm mb-2">{t?.initializingOsintSearch || 'INITIALIZING OSINT SEARCH...'}</div>
             <div className="space-y-1">
-              <div className="text-green-400 font-mono text-xs">✓ Accessing Global Databases...</div>
-              <div className="text-green-400 font-mono text-xs">✓ Checking Social Media Nodes...</div>
-              <div className="text-yellow-400 font-mono text-xs animate-pulse">⟳ Scanning Target Profiles...</div>
+              <div className="text-green-400 font-mono text-xs">✓ {t?.accessingGlobalDatabases || 'Accessing Global Databases...'}</div>
+              <div className="text-green-400 font-mono text-xs">✓ {t?.checkingSocialMediaNodes || 'Checking Social Media Nodes...'}</div>
+              <div className="text-yellow-400 font-mono text-xs animate-pulse">⟳ {t?.scanningTargetProfiles || 'Scanning Target Profiles...'}</div>
             </div>
           </div>
         )}

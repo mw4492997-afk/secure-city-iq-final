@@ -13,6 +13,15 @@ export interface ScanNode {
   city?: string;
 }
 
+export interface NetworkDevice {
+  ip: string;
+  name?: string;
+  mac?: string;
+  status: 'active' | 'inactive';
+  vendor?: string;
+  source?: string;
+}
+
 export interface PingResult {
   reachable: boolean;
   responseTime: number;
@@ -201,6 +210,48 @@ export const realNetworkScan = async (target?: string): Promise<ScanNode[]> => {
   } catch (error) {
     console.error('realNetworkScan error:', error);
     return simulateNetworkScan();
+  }
+};
+
+export const fetchNetworkDevices = async (): Promise<{
+  success: boolean;
+  localIP: string;
+  localSubnet?: string;
+  devices: NetworkDevice[];
+}> => {
+  try {
+    const response = await fetch('/api/network-devices', {
+      method: 'GET',
+      cache: 'no-store',
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Network devices request failed');
+    }
+
+    const data = await safeJson<{
+      success?: boolean;
+      localIP?: string;
+      localSubnet?: string;
+      devices?: NetworkDevice[];
+    }>(response);
+
+    return {
+      success: !!data?.success,
+      localIP: data?.localIP || DEFAULT_IP,
+      localSubnet: data?.localSubnet,
+      devices: Array.isArray(data?.devices) ? data.devices : [],
+    };
+  } catch (error) {
+    console.error('fetchNetworkDevices error:', error);
+    return {
+      success: false,
+      localIP: DEFAULT_IP,
+      devices: [],
+    };
   }
 };
 

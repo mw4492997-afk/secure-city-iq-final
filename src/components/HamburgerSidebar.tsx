@@ -4,10 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   BarChart3, Globe, Network, Radio, ShieldAlert, FileText, Terminal, 
-  Scan, Key, Fingerprint, Zap, ShieldCheck, Lock, ZapOff, User 
+  Scan, Key, Fingerprint, Zap, ShieldCheck, Lock, ZapOff, User, BookOpen 
 } from "lucide-react";
 
 interface HamburgerSidebarProps {
+  openUserGuide: () => void;
   isOpen: boolean;
   onClose: () => void;
   activeTab: string;
@@ -21,6 +22,8 @@ interface HamburgerSidebarProps {
   setShowKaliToolset: (open: boolean) => void;
   setTestLabMode: (mode: boolean) => void; // dummy for launch attack
   handleActivateLockdown: () => void;
+  speakLabel: (label: string) => void;
+  t: Record<string, string>;
 }
 
 const sidebarVariants = {
@@ -46,44 +49,55 @@ export default function HamburgerSidebar({
   showKaliToolset, 
   setShowKaliToolset, 
   setTestLabMode,
-  handleActivateLockdown 
+  handleActivateLockdown,
+  speakLabel,
+  openUserGuide,
+  t,
 }: HamburgerSidebarProps) {
   const handleCommandCenter = () => {
+    speakLabel(t.commandCenter);
     setActiveComponent('dashboard');
     onClose();
   };
 
   const handleGlobalIntelligence = () => {
+    speakLabel(t.globalIntelligence);
     setActiveComponent('intelligence');
     onClose();
   };
 
   const handleNodeTopology = () => {
+    speakLabel(t.cyberTopology);
     setActiveComponent('topology');
     onClose();
   };
 
   const handleSignalIntercept = () => {
+    speakLabel(t.signalIntercept);
     setActiveComponent('signal');
     onClose();
   };
 
   const handleActiveFirewall = () => {
+    speakLabel(t.activeFirewall);
     setActiveComponent('firewall');
     onClose();
   };
 
   const handleSystemAuditLogs = () => {
+    speakLabel(t.systemAuditLogsMenu);
     setActiveComponent('logs');
     onClose();
   };
 
   const handleKaliToolset = () => {
+    speakLabel(t.kaliToolset);
     setActiveComponent('kali');
     onClose();
   };
 
   const handleLaunchSimulatedAttack = () => {
+    speakLabel(t.launchAttack);
     setTestLabMode(true);
     setActiveComponent('attack');
     onClose();
@@ -147,28 +161,28 @@ export default function HamburgerSidebar({
             <div className="p-8 flex-1 space-y-10 overflow-y-auto max-h-[calc(100vh-16rem)] scrollbar-thin scrollbar-thumb-[var(--active-neon)]/30 scrollbar-track-transparent hover:scrollbar-thumb-[var(--active-neon)]/50">
               <div>
                 <h3 className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.4em] mb-6 flex items-center gap-2">
-                  <div className="w-4 h-[1px] bg-zinc-800" /> SYSTEM CONTROL
+                  <div className="w-4 h-[1px] bg-zinc-800" /> {t.systemControl}
                 </h3>
                 <div className="space-y-1.5">
-                  <MenuLink icon={<BarChart3 className="w-4 h-4" />} label="Command Center" active={activeComponent === 'dashboard'} onClick={handleCommandCenter} />
-                  <MenuLink icon={<Globe className="w-4 h-4" />} label="Global Intelligence" active={activeComponent === 'intelligence'} onClick={handleGlobalIntelligence} />
-                  <MenuLink icon={<Network className="w-4 h-4" />} label="Cyber Topology" active={activeComponent === 'topology'} onClick={handleNodeTopology} />
-                  <MenuLink icon={<Radio className="w-4 h-4" />} label="Signal Intercept" active={activeComponent === 'signal'} onClick={handleSignalIntercept} />
+                  <MenuLink icon={<BarChart3 className="w-4 h-4" />} label={t.commandCenter} active={activeComponent === 'dashboard'} onClick={handleCommandCenter} />
+                  <MenuLink icon={<Globe className="w-4 h-4" />} label={t.globalIntelligence} active={activeComponent === 'intelligence'} onClick={handleGlobalIntelligence} />
+                  <MenuLink icon={<Network className="w-4 h-4" />} label={t.cyberTopology} active={activeComponent === 'topology'} onClick={handleNodeTopology} />
+                  <MenuLink icon={<Radio className="w-4 h-4" />} label={t.signalIntercept} active={activeComponent === 'signal'} onClick={handleSignalIntercept} />
                 </div>
               </div>
               
               <div>
                 <h3 className="text-[10px] text-zinc-600 font-black uppercase tracking-[0.4em] mb-6 flex items-center gap-2">
-                  <div className="w-4 h-[1px] bg-zinc-800" /> DEFENSE DEPT
+                  <div className="w-4 h-[1px] bg-zinc-800" /> {t.defenseDept}
                 </h3>
                 <div className="space-y-1.5">
-                  <MenuLink icon={<ShieldAlert className="w-4 h-4" />} label="Active Firewall" active={activeComponent === 'firewall'} onClick={handleActiveFirewall} />
-                  <MenuLink icon={<FileText className="w-4 h-4" />} label="SYSTEM AUDIT LOGS" active={activeComponent === 'logs'} onClick={handleSystemAuditLogs} />
-                  <MenuLink icon={<Terminal className="w-4 h-4" />} label="KALI TOOLSET" active={activeComponent === 'kali'} onClick={handleKaliToolset} />
-                  <MenuLink icon={<Scan className="w-4 h-4" />} label="Vulnerability Scan" active={activeComponent === 'scanner'} onClick={() => {setActiveComponent('scanner'); onClose();}} />
-                  <MenuLink icon={<Key className="w-4 h-4" />} label="Keys & Vaults" active={activeComponent === 'vaults'} onClick={() => {setActiveComponent('vaults'); onClose();}} />
-                  <MenuLink icon={<Fingerprint className="w-4 h-4" />} label="Biometric Logs" active={activeComponent === 'biometric'} onClick={() => {setActiveComponent('biometric'); onClose();}} />
-                  <MenuLink icon={<Zap className="w-4 h-4" />} label="LAUNCH SIMULATED ATTACK" active={activeComponent === 'attack'} onClick={handleLaunchSimulatedAttack} />
+                  <MenuLink icon={<ShieldAlert className="w-4 h-4" />} label={t.activeFirewall} active={activeComponent === 'firewall'} onClick={handleActiveFirewall} />
+                  <MenuLink icon={<FileText className="w-4 h-4" />} label={t.systemAuditLogsMenu} active={activeComponent === 'logs'} onClick={handleSystemAuditLogs} />
+                  <MenuLink icon={<Terminal className="w-4 h-4" />} label={t.kaliToolset} active={activeComponent === 'kali'} onClick={handleKaliToolset} />
+                  <MenuLink icon={<Scan className="w-4 h-4" />} label={t.vulnerabilityScan} active={activeComponent === 'scanner'} onClick={() => {setActiveComponent('scanner'); onClose();}} />
+                  <MenuLink icon={<Key className="w-4 h-4" />} label={t.keysVaults} active={activeComponent === 'vaults'} onClick={() => {setActiveComponent('vaults'); onClose();}} />
+                  <MenuLink icon={<Fingerprint className="w-4 h-4" />} label={t.biometricLogs} active={activeComponent === 'biometric'} onClick={() => {setActiveComponent('biometric'); onClose();}} />
+                  <MenuLink icon={<Zap className="w-4 h-4" />} label={t.launchAttack} active={activeComponent === 'attack'} onClick={handleLaunchSimulatedAttack} />
                 </div>
               </div>
 
@@ -220,7 +234,28 @@ export default function HamburgerSidebar({
               </div>
             </div>
 
-            <div className="p-6 border-t border-white/5">
+            <div className="p-6 border-t border-white/5 space-y-3">
+              <button
+                type="button"
+                onClick={openUserGuide}
+                className="w-full py-3 rounded-2xl border border-white/10 bg-white/5 text-[11px] uppercase tracking-[0.25em] text-zinc-200 flex items-center justify-center gap-2 hover:bg-[var(--active-neon)]/10 hover:border-[var(--active-neon)]/30 transition"
+              >
+                <BookOpen className="w-4 h-4" />
+                {t.userGuide}
+              </button>
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={openUserGuide}
+                  title={t.userGuide}
+                  className="p-3 rounded-3xl border border-white/10 bg-black/30 text-zinc-200 hover:border-[var(--active-neon)]/30 hover:bg-[var(--active-neon)]/10 transition shadow-[0_0_15px_rgba(45,212,191,0.12)]"
+                >
+                  <BookOpen className="w-5 h-5" />
+                </button>
+                <span className="text-[11px] text-zinc-400 uppercase tracking-[0.25em] font-black">
+                  {t.userGuide}
+                </span>
+              </div>
               <button 
                 onClick={handleActivateLockdown}
                 className={`w-full py-4 rounded-2xl border font-black text-[10px] uppercase tracking-[0.3em] transition-all duration-700 flex items-center justify-center gap-4 group hover:shadow-[0_0_20px_var(--active-neon)] hover:scale-[1.02] ${
@@ -230,7 +265,7 @@ export default function HamburgerSidebar({
                 }`}
               >
                 {redAlert ? <ZapOff className="w-4 h-4 animate-bounce" /> : <Lock className="w-4 h-4 group-hover:rotate-12 transition-transform" />}
-                {redAlert ? 'RELEASE PROTOCOLS' : 'INITIATE LOCKDOWN'}
+                {redAlert ? t.releaseProtocols : t.initiateLockdown}
               </button>
             </div>
           </motion.aside>

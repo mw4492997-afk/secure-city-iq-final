@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { Locale } from '@/lib/translations';
 import { motion } from "framer-motion";
 import { Scan, Target, AlertTriangle, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
@@ -8,19 +9,24 @@ import { toast } from "sonner";
 interface ScannerViewProps {
   consoleLogs: string[];
   setConsoleLogs: (logs: string[]) => void;
+  t: Record<string, string>;
+  language: Locale;
 }
 
 export default function ScannerView({
   consoleLogs,
   setConsoleLogs,
+  t,
 }: ScannerViewProps) {
   const [scanTarget, setScanTarget] = useState("");
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState<any>(null);
+  const [scanTool, setScanTool] = useState<"nmap" | "masscan" | "openvas" | "nessus">("nmap");
+  const [toolResult, setToolResult] = useState<any>(null);
 
   const handleQuickScan = async () => {
     if (!scanTarget.trim()) {
-      toast.warning("Please enter an IP address");
+      toast.warning(t.enterIpAddress || "Please enter an IP address");
       return;
     }
 
@@ -107,12 +113,12 @@ export default function ScannerView({
 
   const handleVulnerabilityScan = async () => {
     if (!scanTarget.trim()) {
-      toast.warning("Please enter an IP address");
+      toast.warning(t.enterIpAddress || "Please enter an IP address");
       return;
     }
 
     setIsScanning(true);
-    toast.info("Vulnerability scan initiated");
+    toast.info(t.vulnerabilityScanInitiated || "Vulnerability scan initiated");
 
     setConsoleLogs((prev) => [
       ...prev.slice(-15),
@@ -150,6 +156,51 @@ export default function ScannerView({
     setIsScanning(false);
   };
 
+  const handleToolScan = async () => {
+    if (!scanTarget.trim()) {
+      toast.warning(t.enterIpAddress || "Please enter an IP address or domain");
+      return;
+    }
+
+    setIsScanning(true);
+    setToolResult(null);
+    toast.info(`Launching ${scanTool.toUpperCase()} scan for ${scanTarget}`);
+
+    setConsoleLogs((prev) => [
+      ...prev.slice(-15),
+      `[${new Date().toLocaleTimeString()}] TOOL_SCAN: Starting ${scanTool.toUpperCase()} scan for ${scanTarget}`,
+    ]);
+
+    try {
+      const response = await fetch("/api/scan-tools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ target: scanTarget.trim(), tool: scanTool }),
+      });
+      const data = await response.json();
+
+      if (!response.ok || data.error) {
+        throw new Error(data.error || "Scan failed");
+      }
+
+      setToolResult(data);
+      setConsoleLogs((prev) => [
+        ...prev.slice(-15),
+        `[${new Date().toLocaleTimeString()}] TOOL_SCAN: ${scanTool.toUpperCase()} scan completed`,
+      ]);
+      toast.success(`${scanTool.toUpperCase()} scan completed`);
+    } catch (error) {
+      console.error(error);
+      setConsoleLogs((prev) => [
+        ...prev.slice(-15),
+        `[${new Date().toLocaleTimeString()}] TOOL_SCAN: Error during ${scanTool.toUpperCase()} scan`,
+      ]);
+      toast.error(`Failed to execute ${scanTool.toUpperCase()} scan`);
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   return (
     <div className="w-full h-full flex flex-col bg-gradient-to-br from-black/40 to-transparent p-6 gap-4 overflow-y-auto">
       {/* Header */}
@@ -174,7 +225,7 @@ export default function ScannerView({
         className="glass-card border border-[var(--active-neon)]/30 rounded-2xl p-6 space-y-4"
       >
         <div className="text-xs font-black uppercase tracking-widest text-[var(--active-neon)]">
-          Target Selection
+              {t.scan}
         </div>
 
         <div className="space-y-3">
@@ -194,23 +245,51 @@ export default function ScannerView({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={handleQuickScan}
-              disabled={isScanning || !scanTarget.trim()}
-              className="px-4 py-2 bg-[var(--active-neon)]/20 border border-[var(--active-neon)]/50 rounded-lg text-[var(--active-neon)] font-bold hover:bg-[var(--active-neon)]/30 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-            >
-              <Target className="w-4 h-4" />
-              {isScanning ? "SCANNING..." : "NEURAL SCAN"}
-            </button>
-            <button
-              onClick={handleVulnerabilityScan}
-              disabled={isScanning || !scanTarget.trim()}
-              className="px-4 py-2 bg-[var(--active-neon)]/20 border border-[var(--active-neon)]/50 rounded-lg text-[var(--active-neon)] font-bold hover:bg-[var(--active-neon)]/30 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
-            >
-              <Scan className="w-4 h-4" />
-              {isScanning ? "SCANNING..." : "PORT SCAN"}
-            </button>
+          <div className="grid gap-3 lg:grid-cols-[1fr_240px]">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={handleQuickScan}
+                disabled={isScanning || !scanTarget.trim()}
+                className="px-4 py-2 bg-[var(--active-neon)]/20 border border-[var(--active-neon)]/50 rounded-lg text-[var(--active-neon)] font-bold hover:bg-[var(--active-neon)]/30 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+              >
+                <Target className="w-4 h-4" />
+                {isScanning ? "SCANNING..." : "NEURAL SCAN"}
+              </button>
+              <button
+                onClick={handleVulnerabilityScan}
+                disabled={isScanning || !scanTarget.trim()}
+                className="px-4 py-2 bg-[var(--active-neon)]/20 border border-[var(--active-neon)]/50 rounded-lg text-[var(--active-neon)] font-bold hover:bg-[var(--active-neon)]/30 disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+              >
+                <Scan className="w-4 h-4" />
+                {isScanning ? "SCANNING..." : "PORT SCAN"}
+              </button>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[10px] text-zinc-400 font-bold uppercase tracking-[0.2em]">
+                Real scan engine
+              </label>
+              <div className="flex items-center gap-2">
+                <select
+                  value={scanTool}
+                  onChange={(e) => setScanTool(e.target.value as any)}
+                  className="flex-1 px-4 py-2 rounded-lg bg-black/40 border border-[var(--active-neon)]/30 text-white focus:outline-none focus:border-[var(--active-neon)] focus:ring-2 focus:ring-[var(--active-neon)]/20"
+                  disabled={isScanning}
+                >
+                  <option value="nmap">Nmap</option>
+                  <option value="masscan">Masscan</option>
+                  <option value="openvas">OpenVAS</option>
+                  <option value="nessus">Nessus</option>
+                </select>
+                <button
+                  onClick={handleToolScan}
+                  disabled={isScanning || !scanTarget.trim()}
+                  className="px-4 py-2 bg-[var(--active-neon)]/20 border border-[var(--active-neon)]/50 rounded-lg text-[var(--active-neon)] font-bold hover:bg-[var(--active-neon)]/30 disabled:opacity-50 transition-all"
+                >
+                  {isScanning ? "RUNNING..." : "RUN"}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </motion.div>
@@ -285,6 +364,63 @@ export default function ScannerView({
             <div className="ml-auto text-[9px] text-zinc-400">
               {scanResult.timestamp.toLocaleTimeString()}
             </div>
+          </div>
+        </motion.div>
+      )}
+
+      {toolResult && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass-card border border-[var(--active-neon)]/30 rounded-2xl p-6 space-y-4"
+        >
+          <div className="text-xs font-black uppercase tracking-widest text-[var(--active-neon)] flex items-center gap-2">
+            <Scan className="w-4 h-4" />
+            Real Scan Output
+          </div>
+
+          <div className="grid gap-3">
+            <div className="rounded-lg bg-black/40 border border-white/10 p-4">
+              <div className="text-[10px] text-zinc-400 mb-1">Tool</div>
+              <div className="text-sm font-bold text-white uppercase">{toolResult.tool}</div>
+            </div>
+
+            {toolResult.target && (
+              <div className="rounded-lg bg-black/40 border border-white/10 p-4">
+                <div className="text-[10px] text-zinc-400 mb-1">Target</div>
+                <div className="text-sm font-bold text-white">{toolResult.target}</div>
+              </div>
+            )}
+
+            {toolResult.error && (
+              <div className="rounded-lg bg-black/40 border border-red-500/30 p-4 text-red-300">
+                <div className="text-[10px] text-red-400 mb-1">Error</div>
+                <div className="text-sm font-bold">{toolResult.error}</div>
+              </div>
+            )}
+
+            {toolResult.ports?.length > 0 && (
+              <div className="rounded-lg bg-black/40 border border-white/10 p-4 space-y-2">
+                <div className="text-[10px] text-zinc-400 uppercase tracking-[0.2em] mb-2">Open Ports</div>
+                <div className="grid gap-2">
+                  {toolResult.ports.map((port: any, index: number) => (
+                    <div key={index} className="rounded-lg bg-black/60 p-3 border border-white/5">
+                      <div className="text-sm font-bold text-white">{port.port}</div>
+                      {port.service && <div className="text-[10px] text-zinc-500">{port.service}</div>}
+                      {port.host && <div className="text-[10px] text-zinc-500">Host: {port.host}</div>}
+                      {port.description && <div className="text-[10px] text-zinc-500">{port.description}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {toolResult.proxyResponse && (
+              <div className="rounded-lg bg-black/40 border border-white/10 p-4">
+                <div className="text-[10px] text-zinc-400 uppercase tracking-[0.2em] mb-2">Proxy Service Response</div>
+                <pre className="text-[10px] text-zinc-300 whitespace-pre-wrap">{JSON.stringify(toolResult.proxyResponse, null, 2)}</pre>
+              </div>
+            )}
           </div>
         </motion.div>
       )}
