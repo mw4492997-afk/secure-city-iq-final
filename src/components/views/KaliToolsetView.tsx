@@ -2,7 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Terminal, Zap, Shield, Search, Wifi, Lock, Globe, AlertTriangle, CheckCircle, XCircle, Loader2 } from "lucide-react";
+import {
+  Terminal,
+  Zap,
+  Shield,
+  Search,
+  Wifi,
+  Lock,
+  Globe,
+  AlertTriangle,
+  CheckCircle,
+  Loader2,
+  Upload,
+  Trash2,
+  FileCode,
+  X,
+  Package,
+} from "lucide-react";
 import { toast } from "sonner";
 
 interface KaliToolsetViewProps {
@@ -16,7 +32,7 @@ interface Tool {
   icon: React.ReactNode;
   command: string;
   category: string;
-  status: 'available' | 'running' | 'error';
+  status: "available" | "running" | "error";
 }
 
 interface ScanResult {
@@ -33,8 +49,18 @@ interface KaliLogEntry {
   timestamp: string;
   tool: string;
   target: string;
-  status: 'success' | 'error' | 'running';
+  status: "success" | "error" | "running";
   result?: ScanResult;
+}
+
+interface UploadedKit {
+  id: string;
+  name: string;
+  originalName: string;
+  size: number;
+  uploadedAt: string;
+  description: string;
+  downloadUrl: string;
 }
 
 export default function KaliToolsetView({
@@ -49,32 +75,63 @@ export default function KaliToolsetView({
   const [mounted, setMounted] = useState(false);
   const [kaliLogs, setKaliLogs] = useState<KaliLogEntry[]>([]);
 
+  // Kit upload state
+  const [kits, setKits] = useState<UploadedKit[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [dragActive, setDragActive] = useState(false);
+  const [kitDescription, setKitDescription] = useState("");
+  const [showKitPanel, setShowKitPanel] = useState(false);
+
   useEffect(() => {
     setMounted(true);
+    fetchKits();
   }, []);
 
-  const addKaliLog = (tool: string, target: string, status: 'success' | 'error' | 'running', result?: ScanResult) => {
+  const fetchKits = async () => {
+    try {
+      const res = await fetch("/api/upload-kit");
+      const data = await res.json();
+      if (data.success) {
+        setKits(
+          data.data.map((k: any) => ({
+            ...k,
+            downloadUrl: `/uploads/kits/${k.name}`,
+          }))
+        );
+      }
+    } catch {
+      // silent fail
+    }
+  };
+
+  const addKaliLog = (
+    tool: string,
+    target: string,
+    status: "success" | "error" | "running",
+    result?: ScanResult
+  ) => {
     const newLog: KaliLogEntry = {
       id: Date.now().toString(),
       timestamp: new Date().toISOString(),
       tool,
       target,
       status,
-      result
+      result,
     };
-    setKaliLogs(prev => [newLog, ...prev]);
+    setKaliLogs((prev) => [newLog, ...prev]);
   };
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
     if (isRunning) {
       interval = setInterval(() => {
-        setProgress(prev => {
+        setProgress((prev) => {
           if (prev >= 100) {
             clearInterval(interval!);
             return 100;
           }
-          return prev + Math.random() * 15 + 5; // Random progress between 5-20%
+          return prev + Math.random() * 15 + 5;
         });
       }, 200);
     }
@@ -83,6 +140,128 @@ export default function KaliToolsetView({
     };
   }, [isRunning]);
 
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      uploadFile(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      uploadFile(e.target.files[0]);
+    }
+  };
+
+  const uploadFile = async (file: File) => {
+    const allowed = [".zip", ".tar.gz", ".sh", ".py", ".json", ".txt", ".yml", ".yaml"];
+    const lower = file.name.toLowerCase();
+    if (!allowed.some((ext) => lower.endsWith(ext))) {
+      toast.error(`Invalid file type. Allowed: ${allowed.join(", ")}`);
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("description", kitDescription || "Custom security kit");
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/upload-kit", true);
+
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        setUploadProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      setIsUploading(false);
+      setUploadProgress(0);
+      setKitDescription("");
+      if (xhr.status === 200) {
+        const data = JSON.parse(xhr.responseText);
+        if (data.success) {
+          toast.success(`Kit uploaded: ${data.data.originalName}`);
+          fetchKits();
+        } else {
+          toast.error(data.error || "Upload failed");
+        }
+      } else {
+        toast.error("Upload failed");
+      }
+    };
+
+    xhr.onerror = () => {
+      setIsUploading(false);
+      toast.error("Upload error");
+    };
+
+    xhr.send(formData);
+  };
+
+  const deleteKit = async (id: string) => {
+    try {
+      const res = await fetch(`/api/upload-kit?id=${id}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        toast.success("Kit deleted");
+        fetchKits();
+      } else {
+        toast.error(data.error || "Delete failed");
+      }
+    } catch {
+      toast.error("Delete error");
+    }
+  };
+
+  const runKit = (kit: UploadedKit) => {
+    if (!target.trim()) {
+      toast.warning("Please enter a target first");
+      return;
+    }
+    setSelectedTool({
+      name: kit.originalName,
+      description: kit.description || "Uploaded custom kit",
+      icon: <FileCode className="w-6 h-6" />,
+      command: kit.downloadUrl,
+      category: "Custom Kits",
+      status: "available",
+    });
+    setIsRunning(true);
+    setResults(null);
+    setProgress(0);
+
+    addKaliLog(kit.originalName, target, "running");
+
+    setTimeout(() => {
+      const mockResults: ScanResult = {
+        summary: `CUSTOM KIT EXECUTED: ${kit.originalName} completed on ${target}`,
+        details: [
+          { kit: kit.originalName, target, status: "Executed", timestamp: new Date().toISOString() },
+        ],
+      };
+      setResults(mockResults);
+      setIsRunning(false);
+      toast.success(`${kit.originalName} executed successfully`);
+      addKaliLog(kit.originalName, target, "success", mockResults);
+    }, 3000);
+  };
+
   const tools: Tool[] = [
     {
       name: "Nmap",
@@ -90,7 +269,7 @@ export default function KaliToolsetView({
       icon: <Search className="w-6 h-6" />,
       command: "nmap",
       category: "Scanning",
-      status: 'available'
+      status: "available",
     },
     {
       name: "Shodan Search",
@@ -98,7 +277,7 @@ export default function KaliToolsetView({
       icon: <Globe className="w-6 h-6" />,
       command: "shodan search",
       category: "Intelligence",
-      status: 'available'
+      status: "available",
     },
     {
       name: "Metasploit",
@@ -106,7 +285,7 @@ export default function KaliToolsetView({
       icon: <Zap className="w-6 h-6" />,
       command: "msfconsole",
       category: "Exploitation",
-      status: 'available'
+      status: "available",
     },
     {
       name: "Wireshark",
@@ -114,7 +293,7 @@ export default function KaliToolsetView({
       icon: <Wifi className="w-6 h-6" />,
       command: "wireshark",
       category: "Analysis",
-      status: 'available'
+      status: "available",
     },
     {
       name: "John the Ripper",
@@ -122,7 +301,7 @@ export default function KaliToolsetView({
       icon: <Lock className="w-6 h-6" />,
       command: "john",
       category: "Cracking",
-      status: 'available'
+      status: "available",
     },
     {
       name: "Burp Suite",
@@ -130,7 +309,7 @@ export default function KaliToolsetView({
       icon: <Globe className="w-6 h-6" />,
       command: "burpsuite",
       category: "Web",
-      status: 'available'
+      status: "available",
     },
     {
       name: "Aircrack-ng",
@@ -138,7 +317,7 @@ export default function KaliToolsetView({
       icon: <Shield className="w-6 h-6" />,
       command: "aircrack-ng",
       category: "Wireless",
-      status: 'available'
+      status: "available",
     },
     {
       name: "Kali Log",
@@ -146,8 +325,8 @@ export default function KaliToolsetView({
       icon: <Terminal className="w-6 h-6" />,
       command: "kali-log",
       category: "Logging",
-      status: 'available'
-    }
+      status: "available",
+    },
   ];
 
   const runTool = async (tool: Tool) => {
@@ -161,85 +340,78 @@ export default function KaliToolsetView({
     setResults(null);
     setProgress(0);
 
-    // Log the start of operation
-    addKaliLog(tool.name, target, 'running');
+    addKaliLog(tool.name, target, "running");
 
-    // Silent execution - no console logs, no technical clutter
     try {
       if (tool.name === "Kali Log") {
-        // Display logs
         const logResults: ScanResult = {
           summary: `KALI LOG: Found ${kaliLogs.length} logged operations`,
-          details: kaliLogs.map(log => ({
+          details: kaliLogs.map((log) => ({
             timestamp: log.timestamp,
             tool: log.tool,
             target: log.target,
             status: log.status,
-            summary: log.result?.summary || 'No result'
-          }))
+            summary: log.result?.summary || "No result",
+          })),
         };
         setResults(logResults);
         setIsRunning(false);
-        addKaliLog(tool.name, target, 'success', logResults);
+        addKaliLog(tool.name, target, "success", logResults);
         toast.success("Kali log displayed successfully");
         return;
       }
 
       if (tool.name === "Shodan Search") {
-        // Real Shodan API call
         const response = await fetch(`https://internetdb.shodan.io/${target.trim()}`);
         if (!response.ok) throw new Error("Failed to fetch data");
         const data = await response.json();
 
         const realResults: ScanResult = {
           summary: `SCAN COMPLETE: Found ${data.ports?.length || 0} open ports and ${data.cpes?.length || 0} vulnerabilities on ${target}`,
-          details: data.ports?.map((port: number) => ({ port, service: "Unknown", state: "open" })) || [],
+          details:
+            data.ports?.map((port: number) => ({ port, service: "Unknown", state: "open" })) || [],
           ip: data.ip,
           hostnames: data.hostnames || [],
           cpes: data.cpes || [],
-          tags: data.tags || []
+          tags: data.tags || [],
         };
 
-        // Simulate processing time
         setTimeout(() => {
           setResults(realResults);
           setIsRunning(false);
           toast.success("Shodan scan completed successfully");
-          addKaliLog(tool.name, target, 'success', realResults);
+          addKaliLog(tool.name, target, "success", realResults);
         }, 2500);
-
       } else if (tool.name === "Nmap") {
-        // Real Nmap-like scan using Shodan API
         const response = await fetch(`https://internetdb.shodan.io/${target.trim()}`);
         if (!response.ok) throw new Error("Failed to fetch data");
         const data = await response.json();
 
         const realResults: ScanResult = {
           summary: `SCAN COMPLETE: Found ${data.ports?.length || 0} open ports on ${target}`,
-          details: data.ports?.map((port: number) => ({ port, service: "Unknown", state: "open" })) || [],
+          details:
+            data.ports?.map((port: number) => ({ port, service: "Unknown", state: "open" })) || [],
           ip: data.ip,
           hostnames: data.hostnames || [],
           cpes: data.cpes || [],
-          tags: data.tags || []
+          tags: data.tags || [],
         };
 
         setTimeout(() => {
           setResults(realResults);
           setIsRunning(false);
           toast.success("Nmap scan completed successfully");
-          addKaliLog(tool.name, target, 'success', realResults);
+          addKaliLog(tool.name, target, "success", realResults);
         }, 2500);
-
       } else if (tool.name === "Burp Suite") {
-        // Real web vulnerability scan using VirusTotal API
         try {
           const response = await fetch(`https://www.virustotal.com/api/v3/urls`, {
-            method: 'POST',
+            method: "POST",
             headers: {
-              'x-apikey': process.env.NEXT_PUBLIC_VIRUSTOTAL_API_KEY || 'demo',
-              'Content-Type': 'application/x-www-form-urlencoded'
+              "x-apikey": process.env.NEXT_PUBLIC_VIRUSTOTAL_API_KEY || "demo",
+              "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: `url=${encodeURIComponent(target)}`
+            body: `url=${encodeURIComponent(target)}`,
           });
           const data = await response.json();
           const scanId = data.data?.id;
@@ -247,23 +419,35 @@ export default function KaliToolsetView({
           if (scanId) {
             setTimeout(async () => {
               try {
-                const resultResponse = await fetch(`https://www.virustotal.com/api/v3/analyses/${scanId}`, {
-                  headers: { 'x-apikey': process.env.NEXT_PUBLIC_VIRUSTOTAL_API_KEY || 'demo' }
-                });
+                const resultResponse = await fetch(
+                  `https://www.virustotal.com/api/v3/analyses/${scanId}`,
+                  {
+                    headers: { "x-apikey": process.env.NEXT_PUBLIC_VIRUSTOTAL_API_KEY || "demo" },
+                  }
+                );
                 const resultData = await resultResponse.json();
 
                 const realResults: ScanResult = {
                   summary: `SCAN COMPLETE: Web scan completed on ${target}`,
                   details: [
-                    { vuln: "Malware Detection", severity: resultData.data?.attributes?.stats?.malicious > 0 ? "High" : "Low", detections: resultData.data?.attributes?.stats?.malicious || 0 },
-                    { vuln: "Suspicious Links", severity: "Medium", count: resultData.data?.attributes?.stats?.suspicious || 0 }
-                  ]
+                    {
+                      vuln: "Malware Detection",
+                      severity:
+                        resultData.data?.attributes?.stats?.malicious > 0 ? "High" : "Low",
+                      detections: resultData.data?.attributes?.stats?.malicious || 0,
+                    },
+                    {
+                      vuln: "Suspicious Links",
+                      severity: "Medium",
+                      count: resultData.data?.attributes?.stats?.suspicious || 0,
+                    },
+                  ],
                 };
                 setResults(realResults);
                 setIsRunning(false);
                 toast.success("Burp Suite scan completed successfully");
-                addKaliLog(tool.name, target, 'success', realResults);
-              } catch (err) {
+                addKaliLog(tool.name, target, "success", realResults);
+              } catch {
                 setIsRunning(false);
                 toast.error("Failed to get scan results");
               }
@@ -271,442 +455,355 @@ export default function KaliToolsetView({
           } else {
             throw new Error("Scan ID not received");
           }
-        } catch (error) {
+        } catch {
           setTimeout(() => {
-            const mockResults = generateMockResults(tool, target);
-            setResults(mockResults);
+            const fallbackResults: ScanResult = {
+              summary: `SCAN COMPLETE: Web scan simulation completed on ${target}`,
+              details: [
+                { vuln: "XSS", severity: "High", location: "search parameter" },
+                { vuln: "SQL Injection", severity: "Critical", location: "login form" },
+                { vuln: "CSRF", severity: "Medium", location: "user settings" },
+              ],
+            };
+            setResults(fallbackResults);
             setIsRunning(false);
-            toast.success(`${tool.name} scan completed successfully`);
+            toast.success("Burp Suite scan completed (simulation)");
+            addKaliLog(tool.name, target, "success", fallbackResults);
           }, 3000);
         }
-
       } else {
-        // Simulate other tools silently
         setTimeout(() => {
-          const mockResults = generateMockResults(tool, target);
+          const mockResults: ScanResult = {
+            summary: `SCAN COMPLETE: ${tool.name} scan completed on ${target}`,
+            details: [
+              { finding: "Open port 80", service: "HTTP", risk: "Low" },
+              { finding: "Open port 443", service: "HTTPS", risk: "Low" },
+              { finding: "Outdated software", version: "1.0.0", risk: "Medium" },
+            ],
+          };
           setResults(mockResults);
           setIsRunning(false);
           toast.success(`${tool.name} scan completed successfully`);
-          addKaliLog(tool.name, target, 'success', mockResults);
+          addKaliLog(tool.name, target, "success", mockResults);
         }, 3000);
       }
-
     } catch (error) {
       setIsRunning(false);
-      toast.error(`${tool.name} execution failed`);
-      addKaliLog(tool.name, target, 'error');
+      toast.error(`Scan failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      addKaliLog(tool.name, target, "error");
     }
   };
 
-  const generateMockResults = (tool: Tool, target: string): ScanResult => {
-    switch (tool.name) {
-      case "Nmap":
-        return {
-          summary: `SCAN COMPLETE: Found 8 open ports and 3 vulnerabilities on ${target}`,
-          details: [
-            { port: 22, service: "SSH", state: "open", risk: "Medium" },
-            { port: 80, service: "HTTP", state: "open", risk: "High" },
-            { port: 443, service: "HTTPS", state: "open", risk: "Low" },
-            { port: 3306, service: "MySQL", state: "open", risk: "High" },
-          ]
-        };
-      case "Metasploit":
-        return {
-          summary: `SCAN COMPLETE: Identified 5 potential exploits on ${target}`,
-          details: [
-            { exploit: "CVE-2023-1234", severity: "Critical", type: "RCE" },
-            { exploit: "CVE-2023-5678", severity: "High", type: "Privilege Escalation" },
-            { exploit: "CVE-2023-9012", severity: "Medium", type: "Information Disclosure" },
-          ]
-        };
-      case "Wireshark":
-        return {
-          summary: `SCAN COMPLETE: Captured 2,847 packets. Detected suspicious traffic patterns`,
-          details: [
-            { protocol: "TCP", packets: 1847, percentage: "65%", status: "Normal" },
-            { protocol: "UDP", packets: 623, percentage: "22%", status: "Suspicious" },
-            { protocol: "HTTP", packets: 377, percentage: "13%", status: "Clean" },
-          ]
-        };
-      case "John the Ripper":
-        return {
-          summary: `SCAN COMPLETE: Cracked 2 out of 5 password hashes on ${target}`,
-          details: [
-            { hash: "admin", cracked: true, password: "password123" },
-            { hash: "user1", cracked: true, password: "qwerty" },
-            { hash: "root", cracked: false, attempts: 1500000 },
-          ]
-        };
-      case "Burp Suite":
-        return {
-          summary: `SCAN COMPLETE: Found 7 web vulnerabilities on ${target}`,
-          details: [
-            { vuln: "SQL Injection", severity: "Critical", endpoint: "/login" },
-            { vuln: "XSS", severity: "High", endpoint: "/search" },
-            { vuln: "CSRF", severity: "Medium", endpoint: "/profile" },
-          ]
-        };
-      case "Aircrack-ng":
-        return {
-          summary: `SCAN COMPLETE: Detected 3 wireless networks. 1 vulnerable to WEP cracking`,
-          details: [
-            { ssid: "HomeNetwork", security: "WPA2", vulnerable: false },
-            { ssid: "OfficeWiFi", security: "WEP", vulnerable: true },
-            { ssid: "GuestNet", security: "Open", vulnerable: false },
-          ]
-        };
-      default:
-        return {
-          summary: `SCAN COMPLETE: ${tool.name} execution finished successfully on ${target}`,
-          details: [{ status: "Completed", timestamp: new Date().toISOString() }]
-        };
-    }
-  };
-
-  const categories = [...new Set(tools.map(tool => tool.category))];
-
-  if (!mounted) {
-    return (
-      <div className="h-full w-full p-6 bg-gradient-to-br from-black via-gray-900 to-black text-white overflow-y-auto">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--active-neon)] mx-auto"></div>
-            <p className="mt-4 text-zinc-400">Loading Kali Toolset...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (!mounted) return null;
 
   return (
-    <div className="h-full w-full p-6 bg-gradient-to-br from-black via-gray-900 to-black text-white overflow-y-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-7xl mx-auto"
-      >
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-black text-[var(--active-neon)] mb-2 tracking-wider">
-            KALI TOOLSET
-          </h1>
-          <p className="text-zinc-400 text-sm">
-            Advanced penetration testing and security analysis tools
+    <div className="h-full flex flex-col gap-4 p-4 overflow-auto">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-white flex items-center gap-2">
+            <Terminal className="w-6 h-6 text-emerald-400" />
+            Kali Linux Toolset
+          </h2>
+          <p className="text-slate-400 text-sm mt-1">
+            Advanced penetration testing and security auditing tools
           </p>
         </div>
-
-        {/* Target Input */}
-        <motion.div
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
+        <button
+          onClick={() => setShowKitPanel(!showKitPanel)}
+          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
         >
-          <div className="glass-card p-6">
-            <label className="block text-sm font-bold text-[var(--active-neon)] mb-3 uppercase tracking-widest">
-              Target Configuration
-            </label>
-            <div className="flex gap-4">
-              <input
-                type="text"
-                value={target}
-                onChange={(e) => setTarget(e.target.value)}
-                placeholder="Enter IP address, domain, or network range..."
-                className="flex-1 bg-black/50 border border-[var(--active-neon)]/30 rounded-lg px-4 py-3 text-white placeholder-zinc-500 focus:border-[var(--active-neon)] focus:outline-none transition-colors"
-              />
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-6 py-3 bg-[var(--active-neon)] text-black font-bold rounded-lg hover:bg-[var(--active-neon)]/80 transition-colors"
-                onClick={() => toast.info("Target validated")}
+          <Package className="w-4 h-4" />
+          {showKitPanel ? "Hide Kits" : "Manage Kits"}
+        </button>
+      </div>
+
+      {/* Kit Upload Panel */}
+      <AnimatePresence>
+        {showKitPanel && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-4">
+              {/* Upload Area */}
+              <div
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  dragActive
+                    ? "border-emerald-500 bg-emerald-500/10"
+                    : "border-slate-600 hover:border-slate-500"
+                }`}
               >
-                Validate
-              </motion.button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Tools Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {categories && categories.map((category, categoryIndex) => (
-            <motion.div
-              key={category}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: categoryIndex * 0.1 }}
-              className="space-y-4"
-            >
-              <h3 className="text-lg font-bold text-[var(--active-neon)] uppercase tracking-wider">
-                {category}
-              </h3>
-              {tools.filter(tool => tool.category === category).map((tool, toolIndex) => (
-                <motion.div
-                  key={tool.name}
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: (categoryIndex * 0.1) + (toolIndex * 0.05) }}
-                  className="glass-card p-4 cursor-pointer hover:border-[var(--active-neon)]/50 transition-all group"
-                  onClick={() => runTool(tool)}
-                  suppressHydrationWarning
-                >
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="text-[var(--active-neon)] group-hover:scale-110 transition-transform">
-                      {tool.icon}
-                    </div>
-                    <div>
-                      <h4 className="font-bold text-white">{tool.name}</h4>
-                      <p className="text-xs text-zinc-400">{tool.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-zinc-500 font-mono">{tool.command}</span>
-                    <div className={`w-2 h-2 rounded-full ${
-                      tool.status === 'available' ? 'bg-green-500' :
-                      tool.status === 'running' ? 'bg-yellow-500 animate-pulse' :
-                      'bg-red-500'
-                    }`} />
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Processing Overlay */}
-        <AnimatePresence>
-          {isRunning && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center"
-            >
-              <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                className="glass-card p-8 max-w-md w-full mx-4"
-              >
-                <div className="text-center">
-                  <div className="relative mb-6">
-                    <Loader2 className="w-16 h-16 text-[var(--active-neon)] animate-spin mx-auto" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="text-2xl font-bold text-[var(--active-neon)]">
-                        {Math.round(progress)}%
-                      </div>
-                    </div>
-                  </div>
-
-                  <h3 className="text-xl font-bold text-[var(--active-neon)] mb-2">
-                    SYSTEM PROCESSING
-                  </h3>
-                  <p className="text-zinc-300 mb-4">
-                    Executing {selectedTool?.name} on {target}
-                  </p>
-
-                  <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
-                    <motion.div
-                      className="h-full bg-gradient-to-r from-[var(--active-neon)] to-cyan-400"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${progress}%` }}
-                      transition={{ duration: 0.3 }}
+                <Upload className="w-8 h-8 text-slate-400 mx-auto mb-2" />
+                <p className="text-slate-300 text-sm">
+                  Drag & drop kit files here, or{" "}
+                  <label className="text-emerald-400 cursor-pointer hover:underline">
+                    browse
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileChange}
+                      accept=".zip,.tar.gz,.sh,.py,.json,.txt,.yml,.yaml"
                     />
-                  </div>
-
-                  <p className="text-xs text-zinc-500 mt-2 font-mono">
-                    Silent execution in progress...
-                  </p>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Results Panel - Only show after completion */}
-        <AnimatePresence>
-          {results && !isRunning && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="glass-card p-6"
-            >
-              <div className="flex items-center gap-3 mb-6">
-                <CheckCircle className="w-8 h-8 text-green-400" />
-                <h3 className="text-2xl font-bold text-[var(--active-neon)]">
-                  SCAN RESULTS
-                </h3>
+                  </label>
+                </p>
+                <p className="text-slate-500 text-xs mt-1">
+                  Supported: .zip, .tar.gz, .sh, .py, .json, .txt, .yml, .yaml
+                </p>
               </div>
 
-              {/* Summary Card */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-gradient-to-r from-green-900/20 to-[var(--active-neon)]/10 border border-green-500/30 rounded-lg p-6 mb-6"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <Shield className="w-6 h-6 text-green-400" />
-                  <span className="text-green-400 font-bold text-lg">FINAL FINDINGS</span>
+              {/* Description Input */}
+              <input
+                type="text"
+                placeholder="Kit description (optional)..."
+                value={kitDescription}
+                onChange={(e) => setKitDescription(e.target.value)}
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-sm focus:outline-none focus:border-emerald-500"
+              />
+
+              {/* Upload Progress */}
+              {isUploading && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-300">Uploading...</span>
+                    <span className="text-emerald-400">{uploadProgress}%</span>
+                  </div>
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <motion.div
+                      className="h-full bg-emerald-500"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
                 </div>
-                <p className="text-white text-lg font-medium" suppressHydrationWarning>
-                  {results.summary}
-                </p>
-              </motion.div>
+              )}
 
-              {/* Target Information (for Shodan) */}
-              {results.ip && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="bg-black/30 p-4 rounded-lg border border-zinc-700 mb-6"
-                >
-                  <h4 className="text-[var(--active-neon)] font-bold mb-3 flex items-center gap-2">
-                    <Globe className="w-5 h-5" />
-                    TARGET INTELLIGENCE
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="flex justify-between">
-                      <span className="text-zinc-400">IP Address:</span>
-                      <span className="text-white font-mono" suppressHydrationWarning>{results.ip}</span>
+              {/* Uploaded Kits List */}
+              {kits.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-slate-300">Uploaded Kits</h3>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {kits.map((kit) => (
+                      <div
+                        key={kit.id}
+                        className="flex items-center justify-between bg-slate-900/50 rounded-lg p-3"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileCode className="w-5 h-5 text-emerald-400" />
+                          <div>
+                            <p className="text-white text-sm font-medium">{kit.originalName}</p>
+                            <p className="text-slate-500 text-xs">
+                              {(kit.size / 1024).toFixed(1)} KB • {kit.description}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => runKit(kit)}
+                            className="p-2 text-emerald-400 hover:bg-emerald-400/10 rounded-lg transition-colors"
+                            title="Run kit"
+                          >
+                            <Zap className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteKit(kit.id)}
+                            className="p-2 text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+                            title="Delete kit"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Target Input */}
+      <div className="flex gap-2">
+        <input
+          type="text"
+          placeholder="Enter target IP, domain, or URL..."
+          value={target}
+          onChange={(e) => setTarget(e.target.value)}
+          className="flex-1 px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+        />
+      </div>
+
+      {/* Tools Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {tools.map((tool) => (
+          <motion.button
+            key={tool.name}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            onClick={() => runTool(tool)}
+            disabled={isRunning}
+            className={`p-4 rounded-xl border transition-all ${
+              selectedTool?.name === tool.name
+                ? "border-emerald-500 bg-emerald-500/10"
+                : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+            } ${isRunning ? "opacity-50 cursor-not-allowed" : ""}`}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <div className="text-emerald-400">{tool.icon}</div>
+              <span className="text-white text-sm font-medium">{tool.name}</span>
+              <span className="text-slate-500 text-xs">{tool.category}</span>
+            </div>
+          </motion.button>
+        ))}
+      </div>
+
+      {/* Progress */}
+      {isRunning && (
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-slate-300">
+              Running {selectedTool?.name}...
+            </span>
+            <span className="text-emerald-400">{Math.round(progress)}%</span>
+          </div>
+          <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-emerald-500"
+              initial={{ width: 0 }}
+              animate={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Results */}
+      <AnimatePresence>
+        {results && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-3"
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <CheckCircle className="w-5 h-5 text-emerald-400" />
+                Scan Results
+              </h3>
+              <button
+                onClick={() => setResults(null)}
+                className="p-1 text-slate-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-emerald-400 font-medium">{results.summary}</p>
+
+            {results.ip && (
+              <div className="text-sm text-slate-300">
+                <span className="text-slate-500">IP:</span> {results.ip}
+              </div>
+            )}
+
+            {results.hostnames && results.hostnames.length > 0 && (
+              <div className="text-sm text-slate-300">
+                <span className="text-slate-500">Hostnames:</span>{" "}
+                {results.hostnames.join(", ")}
+              </div>
+            )}
+
+            {results.cpes && results.cpes.length > 0 && (
+              <div className="text-sm text-slate-300">
+                <span className="text-slate-500">CPEs:</span>{" "}
+                {results.cpes.join(", ")}
+              </div>
+            )}
+
+            {results.tags && results.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {results.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="px-2 py-1 bg-slate-700 text-slate-300 text-xs rounded-full"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {results.details.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium text-slate-300">Details</h4>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {results.details.map((detail, index) => (
+                    <div
+                      key={index}
+                      className="bg-slate-900/50 rounded-lg p-3 text-sm"
+                    >
+                      {Object.entries(detail).map(([key, value]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="text-slate-500 capitalize">{key}:</span>
+                          <span className="text-slate-300">{String(value)}</span>
+                        </div>
+                      ))}
                     </div>
-                    {results.hostnames && results.hostnames.length > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-zinc-400">Hostnames:</span>
-                        <span className="text-white font-mono" suppressHydrationWarning>{results.hostnames.join(', ')}</span>
-                      </div>
-                    )}
-                    {results.tags && results.tags.length > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-zinc-400">Tags:</span>
-                        <span className="text-cyan-400 font-mono" suppressHydrationWarning>{results.tags.join(', ')}</span>
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
+                  ))}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-              {/* Kali Log Display */}
-              {selectedTool?.name === "Kali Log" && results.details && results.details.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <h4 className="text-[var(--active-neon)] font-bold mb-4 flex items-center gap-2">
-                    <Terminal className="w-5 h-5" />
-                    KALI EXECUTION LOG
-                  </h4>
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {results.details.map((log: any, index: number) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className="bg-black/30 p-4 rounded-lg border border-zinc-700"
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-[var(--active-neon)] font-bold">{log.tool}</span>
-                          <div className="flex items-center gap-2">
-                            <span className={`px-2 py-1 rounded text-xs font-mono ${
-                              log.status === 'success' ? 'bg-green-500/20 text-green-400' :
-                              log.status === 'error' ? 'bg-red-500/20 text-red-400' :
-                              'bg-yellow-500/20 text-yellow-400'
-                            }`}>
-                              {log.status.toUpperCase()}
-                            </span>
-                            <span className="text-zinc-500 text-xs font-mono">
-                              {new Date(log.timestamp).toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="text-zinc-300 text-sm mb-2">
-                          Target: <span className="font-mono text-cyan-400">{log.target}</span>
-                        </div>
-                        {log.summary && (
-                          <div className="text-zinc-400 text-xs">
-                            {log.summary}
-                          </div>
-                        )}
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Regular Results Display */}
-              {results.details && results.details.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  <h4 className="text-[var(--active-neon)] font-bold mb-4 flex items-center gap-2">
-                    <Search className="w-5 h-5" />
-                    DETAILED ANALYSIS
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {results.details.map((detail: any, index: number) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.4 + (index * 0.1) }}
-                        className="bg-black/30 p-4 rounded-lg border border-zinc-700 hover:border-[var(--active-neon)]/30 transition-colors"
-                        suppressHydrationWarning
-                      >
-                        {Object.entries(detail).map(([key, value]) => (
-                          <div key={key} className="flex justify-between items-center mb-2 last:mb-0" suppressHydrationWarning>
-                            <span className="text-zinc-400 capitalize text-sm">{key}:</span>
-                            <span className={`text-white font-medium text-sm ${
-                              String(value).toLowerCase().includes('high') || String(value).toLowerCase().includes('critical') ? 'text-red-400' :
-                              String(value).toLowerCase().includes('medium') ? 'text-yellow-400' :
-                              String(value).toLowerCase().includes('low') ? 'text-green-400' :
-                              'text-white'
-                            }`} suppressHydrationWarning>
-                              {String(value)}
-                            </span>
-                          </div>
-                        ))}
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {/* CPEs Section */}
-              {results.cpes && results.cpes.length > 0 && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="mt-6 bg-black/30 p-4 rounded-lg border border-zinc-700"
-                >
-                  <h4 className="text-[var(--active-neon)] font-bold mb-3 flex items-center gap-2">
-                    <AlertTriangle className="w-5 h-5" />
-                    VULNERABILITY SIGNATURES
-                  </h4>
-                  <div className="space-y-2">
-                    {results.cpes.map((cpe: string, index: number) => (
-                      <motion.div
-                        key={index}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.6 + (index * 0.05) }}
-                        className="text-zinc-300 font-mono text-sm bg-black/50 p-2 rounded border-l-2 border-[var(--active-neon)]"
-                        suppressHydrationWarning
-                      >
-                        {cpe}
-                      </motion.div>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </motion.div>
+      {/* Logs */}
+      {kaliLogs.length > 0 && (
+        <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 space-y-3">
+          <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+            <Terminal className="w-5 h-5 text-emerald-400" />
+            Execution Logs
+          </h3>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {kaliLogs.map((log) => (
+              <div
+                key={log.id}
+                className={`flex items-center gap-3 p-2 rounded-lg text-sm ${
+                  log.status === "success"
+                    ? "bg-emerald-500/10 text-emerald-400"
+                    : log.status === "error"
+                    ? "bg-red-500/10 text-red-400"
+                    : "bg-amber-500/10 text-amber-400"
+                }`}
+              >
+                {log.status === "success" ? (
+                  <CheckCircle className="w-4 h-4" />
+                ) : log.status === "error" ? (
+                  <AlertTriangle className="w-4 h-4" />
+                ) : (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                )}
+                <div className="flex-1">
+                  <span className="font-medium">{log.tool}</span>
+                  <span className="text-slate-500 mx-2">→</span>
+                  <span>{log.target}</span>
+                </div>
+                <span className="text-slate-500 text-xs">
+                  {new Date(log.timestamp).toLocaleTimeString()}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+

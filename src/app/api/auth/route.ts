@@ -12,12 +12,26 @@ function getUnauthorizedResponse() {
   );
 }
 
+async function logAuditEvent(event: string, source: string, level: "Info" | "Warning" | "Critical" | "Alert") {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    await fetch(`${baseUrl}/api/audit-logs`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ event, source, level }),
+    });
+  } catch (err) {
+    console.error("Failed to log audit event:", err);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { username, password } = body;
 
     if (!username || !password) {
+      await logAuditEvent("Login attempt with missing credentials", "Authentication", "Warning");
       return NextResponse.json(
         { success: false, error: "Username and password are required" },
         { status: 400 }
@@ -25,14 +39,18 @@ export async function POST(request: NextRequest) {
     }
 
     if (username !== ADMIN_USERNAME) {
+      await logAuditEvent(`Failed login attempt for user: ${username}`, "Authentication", "Alert");
       return getUnauthorizedResponse();
     }
 
     const valid = await bcrypt.compare(password, ADMIN_PASSWORD_HASH);
 
     if (!valid) {
+      await logAuditEvent(`Failed login attempt for user: ${username}`, "Authentication", "Alert");
       return getUnauthorizedResponse();
     }
+
+    await logAuditEvent(`User login successful: ${username}`, "Authentication", "Info");
 
     const response = NextResponse.json({ success: true, authenticated: true });
     response.cookies.set(AUTH_COOKIE_NAME, "1", {
@@ -44,6 +62,7 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Auth login error:", error);
+    await logAuditEvent("Authentication service error", "Authentication", "Critical");
     return NextResponse.json(
       { success: false, error: "Authentication service error" },
       { status: 500 }
