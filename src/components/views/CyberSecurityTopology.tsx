@@ -12,6 +12,7 @@ import {
   Loader2,
   ShieldCheck,
   MapPin,
+  Server,
 } from "lucide-react";
 import { toast } from "sonner";
 import NetworkTopology3D from "@/components/NetworkTopology3D";
@@ -25,44 +26,13 @@ interface DiscoveredNode {
   id: string;
   name: string;
   ip: string;
+  mac?: string;
   type: "Public" | "Local" | "Gateway" | "Device";
   status: "active" | "inactive";
   responseTime?: number;
   position: [number, number, number];
   icon: React.ReactNode;
 }
-
-/* ------------------------------------------------------------------ */
-/*  Embedded real network data (no backend server needed)              */
-/* ------------------------------------------------------------------ */
-
-const DEFAULT_NETWORK_NODES = [
-  { ip: "192.168.1.105",   city: "MacBook-Pro",        status: "active",  response_time: 12 },
-  { ip: "192.168.1.1",     city: "Gateway",            status: "active",  response_time: 1 },
-  { ip: "192.168.1.144",   city: "Smart-Speaker",      status: "active",  response_time: 7 },
-  { ip: "192.168.1.10",    city: "Workstation-A",      status: "active",  response_time: 14 },
-  { ip: "192.168.1.15",    city: "Workstation-B",      status: "active",  response_time: 9 },
-  { ip: "192.168.1.21",    city: "IP-Camera",          status: "active",  response_time: 45 },
-  { ip: "192.168.1.33",    city: "NAS-Storage",        status: "active",  response_time: 22 },
-  { ip: "192.168.1.44",    city: "Smart-TV",           status: "active",  response_time: 6 },
-  { ip: "192.168.1.60",    city: "Mobile-Android",     status: "active",  response_time: 15 },
-  { ip: "192.168.1.72",    city: "iPhone-13",          status: "active",  response_time: 18 },
-  { ip: "192.168.1.88",    city: "IoT-Sensor",         status: "active",  response_time: 11 },
-  { ip: "192.168.1.90",    city: "Raspberry-Pi",       status: "active",  response_time: 30 },
-  { ip: "192.168.1.112",   city: "Surface-Laptop",     status: "active",  response_time: 13 },
-  { ip: "192.168.1.128",   city: "Linux-Server",       status: "active",  response_time: 25 },
-  { ip: "192.168.1.155",   city: "Game-Console",       status: "active",  response_time: 19 },
-  { ip: "192.168.1.166",   city: "Tablet-iPad",        status: "active",  response_time: 10 },
-  { ip: "192.168.1.177",   city: "Security-DVR",       status: "active",  response_time: 28 },
-  { ip: "192.168.1.188",   city: "Access-Point",       status: "active",  response_time: 8 },
-  { ip: "10.0.0.2",        city: "VPN-Gateway",        status: "active",  response_time: 5 },
-  { ip: "10.0.0.15",       city: "Cloud-VM-1",         status: "active",  response_time: 20 },
-  { ip: "10.0.0.22",       city: "Cloud-VM-2",         status: "active",  response_time: 35 },
-  { ip: "172.16.0.5",      city: "Branch-Office",      status: "active",  response_time: 16 },
-  { ip: "172.16.0.12",     city: "Remote-PC",          status: "active",  response_time: 24 },
-  { ip: "192.168.1.55",    city: "Printer",            status: "inactive", response_time: -1 },
-  { ip: "192.168.1.135",   city: "Old-Router",         status: "inactive", response_time: -1 },
-] as const;
 
 /* ------------------------------------------------------------------ */
 /*  Device fingerprinting from User Agent                              */
@@ -171,18 +141,6 @@ function discoverLocalIP(): Promise<string> {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Gateway Detection (heuristic)                                      */
-/* ------------------------------------------------------------------ */
-
-function detectGateway(localIP: string): string | null {
-  if (localIP.includes("192.168.")) {
-    const subnet = localIP.split(".").slice(0, 3).join(".");
-    return `${subnet}.1`;
-  }
-  return "192.168.1.1";
-}
-
-/* ------------------------------------------------------------------ */
 /*  Position helper for 3D map                                         */
 /* ------------------------------------------------------------------ */
 
@@ -204,9 +162,60 @@ export default function CyberSecurityTopology() {
   const [publicIP, setPublicIP] = useState<string>("—");
   const [localIP, setLocalIP] = useState<string>("—");
   const [gatewayIP, setGatewayIP] = useState<string>("—");
+  const [serverStatus, setServerStatus] = useState<string>("checking");
   const [deviceInfo, setDeviceInfo] = useState(fingerprintDevice());
   const [selectedNode, setSelectedNode] = useState<DiscoveredNode | null>(null);
   const scanIdRef = useRef(0);
+
+  /* Fetch from REAL Python Flask Server (localhost:5000) */
+  const fetchFromFlaskServer = useCallback(async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/get_nodes", {
+        method: "GET",
+        mode: "cors",
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const data = (await response.json()) as {
+        success?: boolean;
+        public_ip?: string;
+        local_ip?: string;
+        nodes?: Array<{
+          ip: string;
+          mac?: string;
+          name?: string;
+          status?: string;
+          response_time?: number;
+          city?: string;
+        }>;
+      };
+
+      return data;
+    } catch (error) {
+      console.error("Flask server connection failed:", error);
+      return null;
+    }
+  }, []);
+
+  /* Fetch Public IP */
+  const fetchPublicIP = useCallback(async () => {
+    try {
+      const res = await fetch("https://api.ipify.org?format=json", {
+        cache: "no-store",
+      });
+      const data = (await res.json()) as { ip?: string };
+      return data.ip || "Unknown";
+    } catch {
+      return "Unable to fetch";
+    }
+  }, []);
 
   const runDiscovery = useCallback(async () => {
     const scanId = ++scanIdRef.current;
@@ -215,21 +224,13 @@ export default function CyberSecurityTopology() {
     setPublicIP("—");
     setLocalIP("—");
     setGatewayIP("—");
+    setServerStatus("checking");
 
     const discovered: DiscoveredNode[] = [];
 
     try {
-      /* 1. Fetch REAL Public IP (always live) */
-      let pubIP = "Unknown";
-      try {
-        const pubRes = await fetch("https://api64.ipify.org?format=json", {
-          cache: "no-store",
-        });
-        const pubData = (await pubRes.json()) as { ip?: string };
-        pubIP = pubData.ip || "Unknown";
-      } catch {
-        pubIP = "Unable to fetch";
-      }
+      /* 1. Fetch REAL Public IP */
+      const pubIP = await fetchPublicIP();
       if (scanId !== scanIdRef.current) return;
       setPublicIP(pubIP);
 
@@ -260,11 +261,42 @@ export default function CyberSecurityTopology() {
         icon: deviceInfo.icon,
       });
 
-      /* 3. Gateway detection */
-      const gw = detectGateway(privIP);
-      if (scanId !== scanIdRef.current) return;
-      if (gw) {
-        setGatewayIP(gw);
+      /* 3. Detect Gateway */
+      const gw = privIP.includes("192.168.")
+        ? `${privIP.split(".").slice(0, 3).join(".")}.1`
+        : "192.168.1.1";
+      setGatewayIP(gw);
+
+      /* 4. Fetch REAL devices from Python Flask Server */
+      const serverData = await fetchFromFlaskServer();
+
+      if (serverData?.success && Array.isArray(serverData.nodes)) {
+        setServerStatus("connected");
+        toast.success("Connected to Python Flask Scanner!");
+
+        serverData.nodes.forEach((dev, idx) => {
+          const isGateway = dev.ip.endsWith(".1") || dev.name?.toLowerCase().includes("gateway");
+          discovered.push({
+            id: `net-${dev.ip}`,
+            name: dev.name || `Device-${dev.ip.split(".").pop()}`,
+            ip: dev.ip,
+            mac: dev.mac,
+            type: isGateway ? "Gateway" : "Device",
+            status: dev.status === "Offline" ? "inactive" : "active",
+            responseTime: dev.response_time,
+            position: spherePosition(3 + idx, serverData.nodes!.length + 3, 5),
+            icon: isGateway ? (
+              <Router className="w-4 h-4 text-emerald-300" />
+            ) : (
+              <Wifi className="w-4 h-4 text-yellow-300" />
+            ),
+          });
+        });
+      } else {
+        setServerStatus("offline");
+        toast.error("Python Flask Server offline — showing local data only");
+
+        // Add gateway as fallback
         discovered.push({
           id: "gateway",
           name: "Router / Gateway",
@@ -277,50 +309,6 @@ export default function CyberSecurityTopology() {
         });
       }
 
-      /* 4. Fetch from LOCAL SERVER (localhost:5000) */
-      let localServerNodes: typeof DEFAULT_NETWORK_NODES = [];
-      try {
-        const localRes = await fetch("http://localhost:5000/api/get_nodes", {
-          cache: "no-store",
-        });
-        if (localRes.ok) {
-          const localData = (await localRes.json()) as {
-            success?: boolean;
-            nodes?: Array<{
-              ip: string;
-              city?: string;
-              status?: string;
-              response_time?: number;
-            }>;
-          };
-          if (localData?.success && Array.isArray(localData.nodes)) {
-            localServerNodes = localData.nodes.map((n) => ({
-              ip: n.ip,
-              city: n.city || "Device",
-              status: n.status === "inactive" ? "inactive" : "active",
-              response_time: n.response_time ?? -1,
-            }));
-          }
-        }
-      } catch {
-        /* fallback to embedded data if server is down */
-      }
-
-      const sourceNodes = localServerNodes.length > 0 ? localServerNodes : DEFAULT_NETWORK_NODES;
-
-      sourceNodes.forEach((dev, idx) => {
-        discovered.push({
-          id: `net-${dev.ip}`,
-          name: dev.city,
-          ip: dev.ip,
-          type: dev.ip.endsWith(".1") && dev.city === "Gateway" ? "Gateway" : "Device",
-          status: dev.status as "active" | "inactive",
-          responseTime: dev.response_time,
-          position: spherePosition(3 + idx, sourceNodes.length + 3, 5),
-          icon: <Wifi className="w-4 h-4 text-yellow-300" />,
-        });
-      });
-
       /* 5. Build final 3D map nodes */
       const finalNodes = discovered.map((n, i) => ({
         ...n,
@@ -329,10 +317,12 @@ export default function CyberSecurityTopology() {
 
       if (scanId === scanIdRef.current) {
         setNodes(finalNodes);
-        toast.success(`Network scan complete — ${finalNodes.length} nodes | Public IP: ${pubIP}`);
+        toast.success(
+          `Network scan complete — ${finalNodes.length} nodes | Public IP: ${pubIP}`
+        );
       }
 
-      /* 6. Firestore log — every time view opens */
+      /* 6. Firestore log */
       await addAuditLog(
         `Network Infrastructure Verified in Wasit - ${pubIP} Secured`,
         "Info"
@@ -340,10 +330,11 @@ export default function CyberSecurityTopology() {
     } catch (err) {
       console.error(err);
       toast.error("Network scan encountered an error.");
+      setServerStatus("error");
     } finally {
       if (scanId === scanIdRef.current) setScanning(false);
     }
-  }, [deviceInfo]);
+  }, [deviceInfo, fetchFromFlaskServer, fetchPublicIP]);
 
   /* Auto-run once on mount */
   useEffect(() => {
@@ -374,21 +365,39 @@ export default function CyberSecurityTopology() {
           </div>
           <h1 className="text-3xl font-black text-white">Cyber Security Topology</h1>
           <p className="text-sm text-zinc-500 max-w-2xl mt-2">
-            Real-time discovery of your actual network environment in Wasit, Iraq.
+            Real-time ARP network scanner connected to Python Flask backend.
           </p>
         </div>
-        <button
-          onClick={runDiscovery}
-          disabled={scanning}
-          className="inline-flex items-center gap-2 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-3 text-sm font-black uppercase tracking-[0.2em] text-cyan-300 hover:bg-cyan-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {scanning ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <ScanLine className="w-4 h-4" />
-          )}
-          {scanning ? "Scanning..." : "Scan Network"}
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Server Status Indicator */}
+          <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-black/30 px-3 py-2">
+            <Server className="w-4 h-4 text-zinc-400" />
+            <span className="text-xs text-zinc-400">Flask:</span>
+            <span
+              className={`w-2 h-2 rounded-full ${
+                serverStatus === "connected"
+                  ? "bg-emerald-400"
+                  : serverStatus === "checking"
+                  ? "bg-yellow-400 animate-pulse"
+                  : "bg-red-400"
+              }`}
+            />
+            <span className="text-xs text-zinc-300 capitalize">{serverStatus}</span>
+          </div>
+
+          <button
+            onClick={runDiscovery}
+            disabled={scanning}
+            className="inline-flex items-center gap-2 rounded-2xl border border-cyan-500/30 bg-cyan-500/10 px-5 py-3 text-sm font-black uppercase tracking-[0.2em] text-cyan-300 hover:bg-cyan-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {scanning ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <ScanLine className="w-4 h-4" />
+            )}
+            {scanning ? "Scanning..." : "Scan Network"}
+          </button>
+        </div>
       </div>
 
       {/* Stats Bar */}
@@ -468,11 +477,16 @@ export default function CyberSecurityTopology() {
                       {node.status}
                     </span>
                   </div>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-[11px] text-zinc-400">
-                    <span className="font-mono text-cyan-200">{node.ip}</span>
-                    <span className="text-right">{node.type}</span>
-                    {node.responseTime !== undefined && (
-                      <span className="col-span-2">{node.responseTime}ms response</span>
+                  <div className="mt-2 space-y-1 text-[11px] text-zinc-400">
+                    <div className="flex justify-between">
+                      <span className="font-mono text-cyan-200">{node.ip}</span>
+                      <span>{node.type}</span>
+                    </div>
+                    {node.mac && (
+                      <div className="font-mono text-zinc-500">{node.mac}</div>
+                    )}
+                    {node.responseTime !== undefined && node.responseTime >= 0 && (
+                      <div>{node.responseTime}ms response</div>
                     )}
                   </div>
                 </motion.div>
@@ -523,6 +537,12 @@ export default function CyberSecurityTopology() {
                   <span className="text-zinc-400">IP Address</span>
                   <span className="font-mono text-cyan-200">{selectedNode.ip}</span>
                 </div>
+                {selectedNode.mac && (
+                  <div className="flex justify-between">
+                    <span className="text-zinc-400">MAC Address</span>
+                    <span className="font-mono text-zinc-300">{selectedNode.mac}</span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-zinc-400">Type</span>
                   <span>{selectedNode.type}</span>
@@ -537,7 +557,7 @@ export default function CyberSecurityTopology() {
                     {selectedNode.status.toUpperCase()}
                   </span>
                 </div>
-                {selectedNode.responseTime !== undefined && (
+                {selectedNode.responseTime !== undefined && selectedNode.responseTime >= 0 && (
                   <div className="flex justify-between">
                     <span className="text-zinc-400">Response Time</span>
                     <span>{selectedNode.responseTime}ms</span>
