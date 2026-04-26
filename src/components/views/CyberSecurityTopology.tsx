@@ -277,8 +277,38 @@ export default function CyberSecurityTopology() {
         });
       }
 
-      /* 4. Merge EMBEDDED network data (no localhost:5000 needed) */
-      DEFAULT_NETWORK_NODES.forEach((dev, idx) => {
+      /* 4. Fetch from LOCAL SERVER (localhost:5000) */
+      let localServerNodes: typeof DEFAULT_NETWORK_NODES = [];
+      try {
+        const localRes = await fetch("http://localhost:5000/api/get_nodes", {
+          cache: "no-store",
+        });
+        if (localRes.ok) {
+          const localData = (await localRes.json()) as {
+            success?: boolean;
+            nodes?: Array<{
+              ip: string;
+              city?: string;
+              status?: string;
+              response_time?: number;
+            }>;
+          };
+          if (localData?.success && Array.isArray(localData.nodes)) {
+            localServerNodes = localData.nodes.map((n) => ({
+              ip: n.ip,
+              city: n.city || "Device",
+              status: n.status === "inactive" ? "inactive" : "active",
+              response_time: n.response_time ?? -1,
+            }));
+          }
+        }
+      } catch {
+        /* fallback to embedded data if server is down */
+      }
+
+      const sourceNodes = localServerNodes.length > 0 ? localServerNodes : DEFAULT_NETWORK_NODES;
+
+      sourceNodes.forEach((dev, idx) => {
         discovered.push({
           id: `net-${dev.ip}`,
           name: dev.city,
@@ -286,7 +316,7 @@ export default function CyberSecurityTopology() {
           type: dev.ip.endsWith(".1") && dev.city === "Gateway" ? "Gateway" : "Device",
           status: dev.status as "active" | "inactive",
           responseTime: dev.response_time,
-          position: spherePosition(3 + idx, DEFAULT_NETWORK_NODES.length + 3, 5),
+          position: spherePosition(3 + idx, sourceNodes.length + 3, 5),
           icon: <Wifi className="w-4 h-4 text-yellow-300" />,
         });
       });
