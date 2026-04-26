@@ -95,9 +95,10 @@ export function useNetworkNodes(options: UseNetworkNodesOptions = {}) {
           ? existing.position
           : generatePosition(index, Math.min(data.nodes!.length, maxNodes));
 
+        const statusLower = (apiNode.status || "").toLowerCase();
         newMap.set(ip, {
           ip,
-          status: apiNode.status === "offline" ? "inactive" : "active",
+          status: statusLower === "offline" ? "inactive" : "active",
           responseTime: apiNode.response_time,
           city: apiNode.city,
           lastSeen: now,
