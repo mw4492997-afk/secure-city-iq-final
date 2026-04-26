@@ -38,7 +38,10 @@ export async function GET(_req: NextRequest) {
   // If no Flask URL is configured, return mock data immediately
   if (!flaskUrl) {
     console.log("[API] No FLASK_API_URL set, returning mock data");
-    return NextResponse.json(getMockData());
+    return NextResponse.json({
+      ...getMockData(),
+      _note: "To see YOUR real network data here, connect your local Flask server using ngrok and set FLASK_API_URL in Render environment variables."
+    });
   }
 
   // Try to connect to Flask
