@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Locale } from '@/lib/translations';
+import type { Locale } from "@/lib/translations";
 import { toast } from "sonner";
-import { Zap, Activity, ShieldCheck } from "lucide-react";
+import { Zap, Activity, ShieldCheck, Loader2 } from "lucide-react";
+import { addAuditLog } from "@/lib/logService";
 
 interface AttackScenario {
   id: string;
@@ -34,6 +35,7 @@ export default function AttackLabView({ speakAttack, t }: AttackLabViewProps) {
   const [scenarios, setScenarios] = useState<AttackScenario[]>([]);
   const [history, setHistory] = useState<AttackResult[]>([]);
   const [running, setRunning] = useState<string | null>(null);
+  const [savingLog, setSavingLog] = useState<string | null>(null);
 
   useEffect(() => {
     const loadScenarios = async () => {
@@ -55,7 +57,9 @@ export default function AttackLabView({ speakAttack, t }: AttackLabViewProps) {
   }, [speakAttack]);
 
   useEffect(() => {
-    const ongoing = history.filter((entry) => /RUNNING|IN_PROGRESS|EXECUTING/i.test(entry.status));
+    const ongoing = history.filter((entry) =>
+      /RUNNING|IN_PROGRESS|EXECUTING/i.test(entry.status)
+    );
     if (ongoing.length > 0) {
       ongoing.forEach((entry) => speakAttack(entry.title));
     }
@@ -63,11 +67,22 @@ export default function AttackLabView({ speakAttack, t }: AttackLabViewProps) {
 
   const launchScenario = async (scenarioId: string) => {
     const scenario = scenarios.find((s) => s.id === scenarioId);
-    if (scenario) {
-      speakAttack(scenario.title);
-    }
+    if (!scenario) return;
+
+    speakAttack(scenario.title);
     setRunning(scenarioId);
+    setSavingLog(scenarioId);
+
     try {
+      // Step 1: Log to Firebase
+      await addAuditLog(
+        scenario.title,
+        scenario.risk === "High" ? "Critical" : "Warning",
+        "Attack Lab"
+      );
+      toast.success(`Log saved: ${scenario.title}`);
+
+      // Step 2: Execute scenario via API
       const response = await fetch("/api/attack-lab", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -84,6 +99,7 @@ export default function AttackLabView({ speakAttack, t }: AttackLabViewProps) {
       toast.error("Attack execution failed");
     } finally {
       setRunning(null);
+      setSavingLog(null);
     }
   };
 
@@ -112,13 +128,15 @@ export default function AttackLabView({ speakAttack, t }: AttackLabViewProps) {
                 <div className="text-xs uppercase tracking-[0.35em] text-zinc-500">{scenario.vector}</div>
                 <div className="text-xl font-black text-white">{scenario.title}</div>
               </div>
-              <span className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.35em] font-black ${
-                scenario.risk === "High"
-                  ? "bg-red-500/15 text-red-300"
-                  : scenario.risk === "Medium"
-                  ? "bg-orange-500/15 text-orange-300"
-                  : "bg-emerald-500/15 text-emerald-300"
-              }`}>
+              <span
+                className={`rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.35em] font-black ${
+                  scenario.risk === "High"
+                    ? "bg-red-500/15 text-red-300"
+                    : scenario.risk === "Medium"
+                    ? "bg-orange-500/15 text-orange-300"
+                    : "bg-emerald-500/15 text-emerald-300"
+                }`}
+              >
                 {scenario.risk}
               </span>
             </div>
@@ -128,7 +146,12 @@ export default function AttackLabView({ speakAttack, t }: AttackLabViewProps) {
               disabled={Boolean(running)}
               className="mt-auto inline-flex items-center justify-center gap-2 rounded-2xl border border-[var(--active-neon)] bg-[var(--active-neon)]/10 px-5 py-3 text-sm font-black uppercase tracking-[0.2em] text-[var(--active-neon)] hover:bg-[var(--active-neon)]/15 transition disabled:cursor-not-allowed disabled:opacity-50"
             >
-              <Zap className="w-4 h-4" /> {running === scenario.id ? t.launching : t.launch}
+              {savingLog === scenario.id ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Zap className="w-4 h-4" />
+              )}
+              {running === scenario.id ? t.launching : t.launch}
             </button>
           </div>
         ))}
@@ -154,9 +177,11 @@ export default function AttackLabView({ speakAttack, t }: AttackLabViewProps) {
                     <div className="text-sm font-bold text-white">{entry.title}</div>
                     <div className="text-[11px] text-zinc-500">{new Date(entry.executedAt).toLocaleString()}</div>
                   </div>
-                  <span className={`text-[10px] uppercase tracking-[0.35em] font-black ${
-                    entry.status === "SUCCESS" ? "text-emerald-300" : "text-yellow-300"
-                  }`}>
+                  <span
+                    className={`text-[10px] uppercase tracking-[0.35em] font-black ${
+                      entry.status === "SUCCESS" ? "text-emerald-300" : "text-yellow-300"
+                    }`}
+                  >
                     {entry.status}
                   </span>
                 </div>
@@ -171,10 +196,9 @@ export default function AttackLabView({ speakAttack, t }: AttackLabViewProps) {
         <div className="flex items-center gap-3 mb-3 text-[var(--active-neon)] uppercase tracking-[0.35em] font-black">
           <Activity className="w-4 h-4" /> {t.attackLab}
         </div>
-        <div>
-          {t.attackLabGuidance}
-        </div>
+        <div>{t.attackLabGuidance}</div>
       </div>
     </div>
   );
 }
+
