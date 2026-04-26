@@ -8,7 +8,17 @@ const express = require("express");
 const cors = require("cors");
 
 const app = express();
-app.use(cors());
+
+// Enable CORS for all origins (frontend can be on any URL)
+app.use(cors({
+  origin: "*",
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: false,
+}));
+
+// Also handle preflight requests explicitly
+app.options("*", cors());
 
 const DEVICE_POOL = [
   { ip: "192.168.1.1",   status: "active",  response_time: 1,  city: "Gateway" },

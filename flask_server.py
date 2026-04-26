@@ -6,13 +6,32 @@ Then open the Next.js app and navigate to Cyber Topology.
 The frontend polls http://localhost:5000/api/get_nodes every 15 seconds.
 """
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, make_response
 from flask_cors import CORS
 import random
 import time
 
 app = Flask(__name__)
-CORS(app)  # Allow cross-origin requests from the Next.js dev server
+
+# Enable CORS for ALL origins (frontend can be on any URL: localhost, 127.0.0.1, Vercel, Netlify, etc.)
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": "*",
+            "methods": ["GET", "POST", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+        }
+    },
+)
+
+# Also add explicit CORS headers to every response
+@app.after_request
+def after_request(response):
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+    response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+    return response
 
 # Base pool of simulated network devices
 DEVICE_POOL = [
